@@ -89,3 +89,14 @@ type ProblemEnvironment struct {
 	Port             int       `json:"port"`
 	MachineImageName *string   `json:"machine_image_name"`
 }
+
+// Instance vm-management-serverから返ってくるinstanceのobject
+type Instance struct {
+	InstanceName     string `json:"instance_name" validate:"required" example:"problem-sc0-li5qj"`
+	MachineImageName string `json:"machine_image_name" validate:"required" example:"problem-sc0"`
+	Domain           string `json:"domain" validate:"required" example:"xxxxxxxx.janog47.eve-ng.com"`
+	Status           string `json:"status" validate:"required" example:"RUNNING"`
+	ProblemID        string `json:"problem_id" validate:"required,uuid" example:"uuid"`
+	UserID           string `json:"user_id" validate:"required" example:"j47-user"`
+	Password         string `json:"password" validate:"required" example:"xxxxxxxx"`
+}

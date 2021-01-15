@@ -14,7 +14,7 @@ func NewScoreserverCommand() *cobra.Command {
 	}
 
 	cmd.AddCommand(
-		NewScoreserverVMCommand(),
+		NewScoreserverInstanceCommand(),
 	)
 
 	flags := cmd.PersistentFlags()
@@ -23,29 +23,29 @@ func NewScoreserverCommand() *cobra.Command {
 	return cmd
 }
 
-func NewScoreserverVMCommand() *cobra.Command {
+func NewScoreserverInstanceCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "vm",
+		Use: "instance",
 	}
 
 	cmd.AddCommand(
-		NewScoreserverVMListCommand(),
-		NewScoreserverVMGetCommand(),
+		NewScoreserverInstanceListCommand(),
+		NewScoreserverInstanceGetCommand(),
 	)
 
 	return cmd
 }
 
-func NewScoreserverVMListCommand() *cobra.Command {
+func NewScoreserverInstanceListCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:  "list",
-		RunE: scoreserverVMListCommandFunc,
+		RunE: scoreserverInstanceListCommandFunc,
 	}
 
 	return cmd
 }
 
-func scoreserverVMListCommandFunc(cmd *cobra.Command, args []string) error {
+func scoreserverInstanceListCommandFunc(cmd *cobra.Command, args []string) error {
 	flags := cmd.Flags()
 
 	endpoint, err := flags.GetString("endpoint")
@@ -65,19 +65,21 @@ func scoreserverVMListCommandFunc(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func NewScoreserverVMGetCommand() *cobra.Command {
+func NewScoreserverInstanceGetCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:  "get",
-		RunE: scoreserverVMGetCommandFunc,
+		RunE: scoreserverInstanceGetCommandFunc,
 	}
 
 	flags := cmd.Flags()
 	flags.StringP("name", "", "", "vm name")
 
+	cmd.MarkFlagRequired("name")
+
 	return cmd
 }
 
-func scoreserverVMGetCommandFunc(cmd *cobra.Command, args []string) error {
+func scoreserverInstanceGetCommandFunc(cmd *cobra.Command, args []string) error {
 	flags := cmd.Flags()
 
 	endpoint, err := flags.GetString("endpoint")

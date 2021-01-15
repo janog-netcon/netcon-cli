@@ -32,9 +32,9 @@ func NewClient(endpoint string) *client {
 func (c *client) ListProblemEnvironment() (*[]types.ProblemEnvironment, error) {
 	u := fmt.Sprintf("%s/problem-environments", c.Endpoint)
 
-	cli := &http.Client{}
 	req, err := http.NewRequest("GET", u, nil)
 
+	cli := &http.Client{}
 	resp, err := cli.Do(req)
 	if err != nil {
 		return nil, err
@@ -94,9 +94,9 @@ func (c *client) ListProblemEnvironment() (*[]types.ProblemEnvironment, error) {
 func (c *client) GetProblemEnvironment(name string) (*[]types.ProblemEnvironment, error) {
 	u := fmt.Sprintf("%s/problem-environments/%s", c.Endpoint, name)
 
-	cli := &http.Client{}
 	req, err := http.NewRequest("GET", u, nil)
 
+	cli := &http.Client{}
 	resp, err := cli.Do(req)
 	if err != nil {
 		return nil, err
