@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/janog-netcon/netcon-cli/pkg/types"
@@ -68,14 +69,10 @@ func (c *client) CreateInstance(problemID, machineImageName string) (*types.Inst
 	if err != nil {
 		return nil, err
 	}
-
-	var body []byte
+	defer resp.Body.Close()
 
 	// TODO: 200以外の時にbodyに何も入っていなかったらエラーにならないかを確認しておく
-	if _, err := resp.Body.Read(body); err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, xerrors.New(fmt.Sprintf("status code not 200: status code is %d: body: %s", resp.StatusCode, body))
@@ -110,14 +107,9 @@ func (c *client) DeleteInstance(name string) error {
 	if err != nil {
 		return err
 	}
-
-	var body []byte
-
-	// TODO: 200以外の時にbodyに何も入っていなかったらエラーにならないかを確認しておく
-	if _, err := resp.Body.Read(body); err != nil {
-		return err
-	}
 	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		return xerrors.New(fmt.Sprintf("status code not 200: status code is %d: body: %s", resp.StatusCode, body))
