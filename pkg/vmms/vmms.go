@@ -124,14 +124,5 @@ func (c *client) DeleteInstance(name string) error {
 		return xerrors.New(fmt.Sprintf("status code not 200: status code is %d: body: %s", resp.StatusCode, body))
 	}
 
-	var respBody deleteInstanceResponseBody
-	if err := json.Unmarshal(body, &respBody); err != nil {
-		return xerrors.Errorf("body %s:json unmarshal error: %w", respBody, err)
-	}
-
-	if !respBody.Response.IsDeleted {
-		return xerrors.New(fmt.Sprintf("delete failed: %s", body))
-	}
-
 	return nil
 }
