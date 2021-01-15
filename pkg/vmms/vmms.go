@@ -83,7 +83,7 @@ func (c *client) CreateInstance(problemID, machineImageName string) (*types.Inst
 
 	var respBody createInstanceResponseBody
 	if err := json.Unmarshal(body, &respBody); err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("body %s:json unmarshal error: %w", respBody, err)
 	}
 
 	instance := respBody.Response.Instance
@@ -125,7 +125,7 @@ func (c *client) DeleteInstance(name string) error {
 
 	var respBody deleteInstanceResponseBody
 	if err := json.Unmarshal(body, &respBody); err != nil {
-		return err
+		return xerrors.Errorf("body %s:json unmarshal error: %w", respBody, err)
 	}
 
 	if !respBody.Response.IsDeleted {

@@ -48,7 +48,7 @@ func (c *client) ListProblemEnvironment() (*[]types.ProblemEnvironment, error) {
 
 	var problemEnvironments []types.ProblemEnvironment
 	if err := json.Unmarshal(respBody, &problemEnvironments); err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("body %s:json unmarshal error: %w", respBody, err)
 	}
 
 	return &problemEnvironments, nil
@@ -110,7 +110,7 @@ func (c *client) GetProblemEnvironment(name string) (*[]types.ProblemEnvironment
 
 	var problemEnvironments []types.ProblemEnvironment
 	if err := json.Unmarshal(respBody, &problemEnvironments); err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("body %s:json unmarshal error: %w", respBody, err)
 	}
 
 	return &problemEnvironments, nil
