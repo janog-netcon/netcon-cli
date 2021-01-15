@@ -1,4 +1,4 @@
-package vmms
+package scoreserver
 
 /*
 https://github.com/janog-netcon/netcon-score-server/blob/janog47-changes/vmdb-api/main.go#L85
@@ -15,13 +15,12 @@ import (
 	"github.com/janog-netcon/netcon-cli/pkg/types"
 )
 
-// client vm-management-system のクライアント
 type client struct {
 	Endpoint   string
 	Credential string
 }
 
-// NewClient vm管理サーバのクライアントを返す
+// NewClient スコアサーバのクライアントを返す
 func NewClient(endpoint, credential string) *client {
 	return &client{
 		Endpoint:   endpoint,
