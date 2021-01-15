@@ -59,8 +59,14 @@ func (c *client) CreateInstance(problemID, machineImageName string) (*types.Inst
 	}
 
 	reqBodyByte, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, err
+	}
 
 	req, err := http.NewRequest("GET", u, bytes.NewBuffer(reqBodyByte))
+	if err != nil {
+		return nil, err
+	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.Credential))
 	req.Header.Set("Content-Type", "application/json")
 
@@ -99,6 +105,9 @@ func (c *client) DeleteInstance(name string) error {
 	u := fmt.Sprintf("%s/instance/%s", c.Endpoint, name)
 
 	req, err := http.NewRequest("GET", u, nil)
+	if err != nil {
+		return err
+	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.Credential))
 	req.Header.Set("Content-Type", "application/json")
 
