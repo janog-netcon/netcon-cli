@@ -43,7 +43,7 @@ func (c *client) ListProblemEnvironment() (*[]types.ProblemEnvironment, error) {
 
 	respBody, _ := ioutil.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
-		return nil, xerrors.New("status code not 200")
+		return nil, xerrors.New(fmt.Sprintf("status code not 200: status code is %d: body: %s", resp.StatusCode, respBody))
 	}
 
 	var problemEnvironments []types.ProblemEnvironment
@@ -105,7 +105,7 @@ func (c *client) GetProblemEnvironment(name string) (*[]types.ProblemEnvironment
 
 	respBody, _ := ioutil.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
-		return nil, xerrors.New("status code not 200")
+		return nil, xerrors.New(fmt.Sprintf("status code not 200: status code is %d: body: %s", resp.StatusCode, respBody))
 	}
 
 	var problemEnvironments []types.ProblemEnvironment

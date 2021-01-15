@@ -78,7 +78,7 @@ func (c *client) CreateInstance(problemID, machineImageName string) (*types.Inst
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, xerrors.New(fmt.Sprintf("status code not 200: %s", body))
+		return nil, xerrors.New(fmt.Sprintf("status code not 200: status code is %d: body: %s", resp.StatusCode, body))
 	}
 
 	var respBody createInstanceResponseBody
@@ -120,7 +120,7 @@ func (c *client) DeleteInstance(name string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return xerrors.New(fmt.Sprintf("status code not 200: %s", body))
+		return xerrors.New(fmt.Sprintf("status code not 200: status code is %d: body: %s", resp.StatusCode, body))
 	}
 
 	var respBody deleteInstanceResponseBody
