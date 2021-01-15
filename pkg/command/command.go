@@ -15,6 +15,7 @@ func NewNetconCommand() *cobra.Command {
 
 	rootCmd.AddCommand(
 		NewSchedulerCommand(),
+		NewScoreserverCommand(),
 	)
 
 	return rootCmd
