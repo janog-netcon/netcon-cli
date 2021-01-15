@@ -16,15 +16,13 @@ import (
 )
 
 type client struct {
-	Endpoint   string
-	Credential string
+	Endpoint string
 }
 
 // NewClient スコアサーバのクライアントを返す
-func NewClient(endpoint, credential string) *client {
+func NewClient(endpoint string) *client {
 	return &client{
-		Endpoint:   endpoint,
-		Credential: credential,
+		Endpoint: endpoint,
 	}
 }
 
@@ -34,7 +32,6 @@ func (c *client) ListProblemEnvironment() (*[]types.ProblemEnvironment, error) {
 
 	cli := &http.Client{}
 	req, err := http.NewRequest("GET", u, nil)
-	req.Header.Add("Authorized: B", c.Credential)
 
 	resp, err := cli.Do(req)
 	if err != nil {
@@ -62,7 +59,6 @@ func (c *client) GetProblemEnvironment(name string) (*types.ProblemEnvironment, 
 
 	cli := &http.Client{}
 	req, err := http.NewRequest("GET", u, nil)
-	req.Header.Add("Authorized: B", c.Credential)
 
 	resp, err := cli.Do(req)
 	if err != nil {
