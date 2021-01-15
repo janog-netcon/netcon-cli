@@ -63,7 +63,7 @@ func (c *client) CreateInstance(problemID, machineImageName string) (*types.Inst
 		return nil, err
 	}
 
-	req, err := http.NewRequest("GET", u, bytes.NewBuffer(reqBodyByte))
+	req, err := http.NewRequest("POST", u, bytes.NewBuffer(reqBodyByte))
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ type deleteInstanceResponseBody struct {
 func (c *client) DeleteInstance(name string) error {
 	u := fmt.Sprintf("%s/instance/%s", c.Endpoint, name)
 
-	req, err := http.NewRequest("GET", u, nil)
+	req, err := http.NewRequest("DELETE", u, nil)
 	if err != nil {
 		return err
 	}
