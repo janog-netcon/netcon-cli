@@ -10,9 +10,11 @@ e.GET("/problem-environments/:name", getProblemEnvironment)
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/janog-netcon/netcon-cli/pkg/types"
+	"golang.org/x/xerrors"
 )
 
 type client struct {
@@ -37,16 +39,15 @@ func (c *client) ListProblemEnvironment() (*[]types.ProblemEnvironment, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	var body []byte
-
-	if _, err := resp.Body.Read(body); err != nil {
-		return nil, err
-	}
 	defer resp.Body.Close()
 
+	respBody, _ := ioutil.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		return nil, xerrors.New("status code not 200")
+	}
+
 	var problemEnvironments []types.ProblemEnvironment
-	if err := json.Unmarshal(body, &problemEnvironments); err != nil {
+	if err := json.Unmarshal(respBody, &problemEnvironments); err != nil {
 		return nil, err
 	}
 
@@ -64,16 +65,15 @@ func (c *client) GetProblemEnvironment(name string) (*types.ProblemEnvironment, 
 	if err != nil {
 		return nil, err
 	}
-
-	var body []byte
-
-	if _, err := resp.Body.Read(body); err != nil {
-		return nil, err
-	}
 	defer resp.Body.Close()
 
+	respBody, _ := ioutil.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		return nil, xerrors.New("status code not 200")
+	}
+
 	var problemEnvironment types.ProblemEnvironment
-	if err := json.Unmarshal(body, &problemEnvironment); err != nil {
+	if err := json.Unmarshal(respBody, &problemEnvironment); err != nil {
 		return nil, err
 	}
 
