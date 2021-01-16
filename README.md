@@ -41,3 +41,14 @@ netcon scoreserver instance list
 netcon vmms instance create --credential ${CREDENTIAL} --problem-id 564c4898-c55c-460f-ad0a-eab5a539514f --machine-image-name image-sc0
 netcon vmms instance delete --credential ${CREDENTIAL} --instance-name image-sc0-rxfe9
 ```
+
+## tips
+
+すべての問題を削除したい場合
+
+!!!ワンライナーで書くと事故の元なので必ず2行に分けましょう!!!
+
+```bash
+PROBLEMS=$(netcon scoreserver instance list | jq -r '.[].name')
+echo $PROBLEMS | xargs -n1 ./netcon vmms instance delete --credential ${CREDENTIAL} --instance-name
+```
