@@ -17,6 +17,7 @@ func schedulerReady(ssClient *scoreserver.scoreserverClient, vmmsClient *vmms.vm
 	if(err != nil) {
 		return err
 	}
+	//ZonePriotyを作る
 
 	//configよりInstanceの作成リストを削除リストを作る
 	createInstanceList, deleteInstanceList := schedulingList(si)
@@ -26,7 +27,7 @@ func schedulerReady(ssClient *scoreserver.scoreserverClient, vmmsClient *vmms.vm
 		return err
 	}
 	//Instance作成リストから対象ProblemのInstanceを作成する
-	cis:= createScheduler(createInstanceList, si, vmmsClient)
+	cis:= createScheduler(createInstanceList, zps, vmmsClient)
 	if(cis != nil) {
 		//Zoneが空いておらず作れていないVMがある
 		return cis
@@ -77,7 +78,7 @@ func aggregateInstance(si ScheduleInfo, scoreserverClient *scoreserver.scoreserv
 func schedulingList(si types.ScheduleInfo) []string, []string {
 	var ciList []types.CreateInstance
     var diList []types.DeleteInstance
-	for pn, pi := range si.ProblemInstances {
+	for _, pi := range si.ProblemInstances {
 		//問題のReady+NotReady+Abandoned数がKeepInstanceを超えてはいけない。超えてたら削除対象。
 		if( pi.Ready + pi.NotReady + pi.Abandoned > pi.KeepPool) {
 			diList = append(diList, types.DeleteInstance{pi.InstanceName, pi.ProjectName, pi.ZoneName})
