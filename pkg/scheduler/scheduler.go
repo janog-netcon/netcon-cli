@@ -8,15 +8,16 @@ import (
 )
 
 
-func schedulerReady(scoreserverClient *scoreserver.scoreserverClient, vmmsClient *vmms.vmmsClient) error {
+func schedulerReady(ssClient *scoreserver.scoreserverClient, vmmsClient *vmms.vmmsClient) error {
 	//情報をsiにまとめる(siを問題ごとに初期化する)
 	var si types.ScheduleInfo
 	var pis []types.ProblemInstance
 	//score serverのデータを取得し集計する
-	si, err := aggregateInstance(endpoint, si)
+	si, err := aggregateInstance(si, ssClient)
 	if(err != nil) {
 		return err
 	}
+
 	//configよりInstanceの作成リストを削除リストを作る
 	createInstanceList, deleteInstanceList := schedulingList(si)
 	//Instance削除リストから対象Instanceを削除する
@@ -25,9 +26,10 @@ func schedulerReady(scoreserverClient *scoreserver.scoreserverClient, vmmsClient
 		return err
 	}
 	//Instance作成リストから対象ProblemのInstanceを作成する
-	err:= createScheduler(createInstanceList, si, vmmsClient)
-	if(err != nil) {
-		return err
+	cis:= createScheduler(createInstanceList, si, vmmsClient)
+	if(cis != nil) {
+		//Zoneが空いておらず作れていないVMがある
+		return cis
 	}
 	return nil
 }
@@ -73,39 +75,63 @@ func aggregateInstance(si ScheduleInfo, scoreserverClient *scoreserver.scoreserv
 // 作成リストと削除リストを返す
 //→ Instanceをどこに作成するかのアルゴリズムはまた別
 func schedulingList(si types.ScheduleInfo) []string, []string {
-	var createInstanceList []types.CreateInstance
-    var deleteInstanceList []types.DeleteInstance
+	var ciList []types.CreateInstance
+    var diList []types.DeleteInstance
 	for pn, pi := range si.ProblemInstances {
 		//問題のReady+NotReady+Abandoned数がKeepInstanceを超えてはいけない。超えてたら削除対象。
 		if( pi.Ready + pi.NotReady + pi.Abandoned > pi.KeepPool) {
-			deleteInstanceList = append(deleteInstanceList, types.DeleteInstance{pi.InstanceName, pi.ProjectName, pi.ZoneName})
+			diList = append(diList, types.DeleteInstance{pi.InstanceName, pi.ProjectName, pi.ZoneName})
 		}
 		//問題のReady+NotReady+Abandoned数がKeepPoolより少ない場合は作成対象にする
 		if( pi.Ready + pi.NotReady + pi.Abandoned < pi.KeepPool) {
-			createInstanceList = append(createInstanceList, types.CreateInstance{pi.ProblemID, pi.MachineImageName, pi.ProjectName, pi.ZoneName})
+			ciList = append(ciList, types.CreateInstance{pi.ProblemID, pi.MachineImageName, pi.ProjectName, pi.ZoneName})
 		}
 	}
-	return createInstanceList, deleteInstanceList
+	return ciList, diList
 }
 
 //削除対象Instanceを全て削除する
-func deleteScheduler(deleteInstanceList, vmmsClient *vmms.Client) {
+func deleteScheduler(dis []types.DeleteInstance, vmmsClient *vmms.Client) {
 	var err error
-	for i, d := range deleteInstanceList {
+	for i, d := range dis {
 		err = vmmsClient.DeleteInstance(d.InstanceName, d.ProjectName, d.ZoneName)
 		if(err != nil) {
 			return err
 		}
 	}
 }
-//空いてるZoneの中で優先Zoneに作成対象Instanceを作成する
-func createScheduler(createInstanceList, si types.ScheduleInfo, vmmsClient *vmms.Client) {	
-	//どこのZoneで立てるか考える
 
-	for i, c := range createInstanceList {
-		err = vmmsClient.CreateInstance(c.ProblemID, c.MachineImageName, c.ProjectName, c.ZoneName)
-		if(err != nil) {
-			return err
+
+type ZPS []ZonePriority
+
+func (a ZPS) Len() int           { return len(a) }
+func (a ZPS) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ZPS) Less(i, j int) bool { return a[i].Priority < a[j].Priority }
+
+
+//空いてるZoneの中で優先Zoneに作成対象Instanceを作成する
+func createScheduler(cis []CreateInstance, zps []ZonePriority, vmmsClient *vmms.Client) cis []CreateInstance{	
+	//優先Zone順に作っていく
+	sort.Sort(ZPS(zps))
+
+	//Instanceを順番につくっていく
+	i := 0
+	//優先度の高いZoneから作る
+	for _, zp := range(zps) {
+		//Zoneに空きがある限りはそこで作る
+		for _; zp.MaxInstance - zp.CurrentInstance > 0; zp.CurrentInstance++ {
+			err = vmmsClient.CreateInstance(cis[i].ProblemID, cis[i].MachineImageName, zp.ProjectName, zp.ZoneName)
+			if(err != nil) {
+				return err
+			}
+			//作れたら次のInstanceの処理に移る
+			i++
+			//Instanceがなくなったら終了
+			if(len(cis) =< i){
+				return nil
+			}
 		}
 	}
+	//作れていないInstance
+	return cis[i-1:]
 }
