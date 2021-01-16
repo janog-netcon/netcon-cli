@@ -44,6 +44,8 @@ func NewContestInitCommand() *cobra.Command {
 type mapping struct {
 	ProblemID        string `yaml:"problem_id"`
 	MachineImageName string `yaml:"machine_image_name"`
+	Project          string `yaml:"project"`
+	Zone             string `yaml:"zone"`
 }
 
 func contestInitCommandFunc(cmd *cobra.Command, args []string) error {
@@ -85,7 +87,13 @@ func contestInitCommandFunc(cmd *cobra.Command, args []string) error {
 			xerrors.New("problem_id が空になっている場所があります")
 		}
 		if m.MachineImageName == "" {
-			xerrors.New("machine-image-name が空になっている場所にあります")
+			xerrors.New("machine-image-name が空になっている場所があります")
+		}
+		if m.Project == "" {
+			xerrors.New("project が空になっている場所があります")
+		}
+		if m.Zone == "" {
+			xerrors.New("zone が空になっている場所があります")
 		}
 	}
 
@@ -98,8 +106,8 @@ func contestInitCommandFunc(cmd *cobra.Command, args []string) error {
 		c := count
 		for c > 0 {
 
-			fmt.Printf("[INFO] creating... problemID: %s, machineImageName: %s\n", m.ProblemID, m.MachineImageName)
-			i, err := cli.CreateInstance(m.ProblemID, m.MachineImageName)
+			fmt.Printf("[INFO] creating... problemID: %s, machineImageName: %s, project: %s, zone: %s\n", m.ProblemID, m.MachineImageName, m.Project, m.Zone)
+			i, err := cli.CreateInstance(m.ProblemID, m.MachineImageName, m.Project, m.Zone)
 			if err != nil {
 				fmt.Println("[ERROR] failed to create instance.")
 				return err

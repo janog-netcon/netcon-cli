@@ -28,6 +28,8 @@ func NewClient(endpoint, credential string) *client {
 type createInstanceRequestBody struct {
 	ProblemID        string `json:"problem_id" validate:"required,uuid"`
 	MachineImageName string `json:"machine_image_name" validate:"required" example:"problem-sc0"`
+	Project          string `json:"project" validate:"required" example:"networkcontest"`
+	Zone             string `json:"zone" validate:"required" zone:"asia-northeast1-b"`
 }
 
 type createInstanceResponseBody struct {
@@ -46,12 +48,14 @@ type createInstanceErrorResponseBody struct {
 }
 
 // CreateInstance VMを作成する
-func (c *client) CreateInstance(problemID, machineImageName string) (*types.Instance, error) {
+func (c *client) CreateInstance(problemID, machineImageName, project, zone string) (*types.Instance, error) {
 	u := fmt.Sprintf("%s/instance", c.Endpoint)
 
 	reqBody := createInstanceRequestBody{
 		ProblemID:        problemID,
 		MachineImageName: machineImageName,
+		Project:          project,
+		Zone:             zone,
 	}
 
 	if err := validate.Struct(reqBody); err != nil {
