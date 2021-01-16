@@ -61,16 +61,16 @@ id                  | status |     host      |   user   | password |            
 */
 
 const (
-	// ProblemEnvironmentStatusNotReady 準備中
-	ProblemEnvironmentStatusNotReady = "NOT_READY"
-	// ProblemEnvironmentStatusReady プール中
-	ProblemEnvironmentStatusReady = "READY"
-	// ProblemEnvironmentStatusUnderChallenge ユーザが解答中
-	ProblemEnvironmentStatusUnderChallenge = "UNDER_CHALLENGE"
-	// ProblemEnvironmentStatusUnderScoring 採点中
-	ProblemEnvironmentStatusUnderScoring = "UNDER_SCORING"
-	// ProblemEnvironmentStatusAbandoned 削除中
-	ProblemEnvironmentStatusAbandoned = "ABANDONED"
+	// ProblemEnvironmentInnerStatusNotReady 準備中
+	ProblemEnvironmentInnerStatusNotReady = "NOT_READY"
+	// ProblemEnvironmentInnerStatusReady プール中
+	ProblemEnvironmentInnerStatusReady = "READY"
+	// ProblemEnvironmentInnerStatusUnderChallenge ユーザが解答中
+	ProblemEnvironmentInnerStatusUnderChallenge = "UNDER_CHALLENGE"
+	// ProblemEnvironmentInnerStatusUnderScoring 採点中
+	ProblemEnvironmentInnerStatusUnderScoring = "UNDER_SCORING"
+	// ProblemEnvironmentInnerStatusAbandoned 削除中
+	ProblemEnvironmentInnerStatusAbandoned = "ABANDONED"
 )
 
 // ProblemEnvironment スコアサーバが管理しているVM情報
