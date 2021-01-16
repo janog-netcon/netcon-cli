@@ -98,6 +98,11 @@ func (c *client) CreateInstance(problemID, machineImageName, project, zone strin
 	return &instance, nil
 }
 
+type deleteInstanceRequestBody struct {
+	Project string `json:"project" validate:"required" example:"networkcontest"`
+	Zone    string `json:"zone" validate:"required" zone:"asia-northeast1-b"`
+}
+
 type deleteInstanceResponseBody struct {
 	Response struct {
 		IsDeleted bool `json:"is_deleted"`
@@ -105,10 +110,24 @@ type deleteInstanceResponseBody struct {
 }
 
 // DeleteInstance VMを削除する
-func (c *client) DeleteInstance(name string) error {
+func (c *client) DeleteInstance(name, project, zone string) error {
 	u := fmt.Sprintf("%s/instance/%s", c.Endpoint, name)
 
-	req, err := http.NewRequest("DELETE", u, nil)
+	reqBody := createInstanceRequestBody{
+		Project: project,
+		Zone:    zone,
+	}
+
+	if err := validate.Struct(reqBody); err != nil {
+		return err
+	}
+
+	reqBodyByte, err := json.Marshal(reqBody)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("DELETE", u, bytes.NewBuffer(reqBodyByte))
 	if err != nil {
 		return err
 	}
