@@ -3,24 +3,38 @@ package scheduler
 import (
 	"github.com/janog-netcon/netcon-cli/pkg/types"
 	"github.com/janog-netcon/netcon-cli/pkg/scoreserver"
+	"github.com/janog-netcon/netcon-cli/pkg/vmms"
 	"github.com/janog-netcon/netcon-cli/pkg/types"
 )
 
 
-
+func schedulerReady(scoreserverClient *scoreserver.scoreserverClient, vmmsClient *vmms.vmmsClient) error {
 	//情報をsiにまとめる(siを問題ごとに初期化する)
-	//var si types.ScheduleInfo
-	//var pis []types.ProblemInstance
+	var si types.ScheduleInfo
+	var pis []types.ProblemInstance
 	//score serverのデータを取得し集計する
-	//si, err := aggregateInstance(endpoint, si)
+	si, err := aggregateInstance(endpoint, si)
+	if(err != nil) {
+		return err
+	}
 	//configよりInstanceの作成リストを削除リストを作る
+	createInstanceList, deleteInstanceList := schedulingList(si)
 	//Instance削除リストから対象Instanceを削除する
+	err:= deleteScheduler(deleteInstanceList, vmmsClient)
+	if(err != nil) {
+		return err
+	}
 	//Instance作成リストから対象ProblemのInstanceを作成する
+	err:= createScheduler(createInstanceList, si, vmmsClient)
+	if(err != nil) {
+		return err
+	}
+	return nil
+}
 
-func aggregateInstance(endpoint string, si ScheduleInfo) {
-	//Score Serverからデータを取得
-	cli := scoreserver.NewClient(endpoint)
-	pes, err := cli.ListProblemEnvironment()
+func aggregateInstance(si ScheduleInfo, scoreserverClient *scoreserver.scoreserverClient) ScheduleInfo, error{
+	//ScoreServerからデータを取得
+	pes, err := scoreserverClient.ListProblemEnvironment()
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +63,6 @@ func aggregateInstance(endpoint string, si ScheduleInfo) {
 			si.ProblemInstances[pn].Ready = si.ProblemInstances[pn].Ready + 1
 		}
 	}
-
 	return si, nil
 }
 
@@ -76,7 +89,23 @@ func schedulingList(si types.ScheduleInfo) []string, []string {
 }
 
 //削除対象Instanceを全て削除する
+func deleteScheduler(deleteInstanceList, vmmsClient *vmms.Client) {
+	var err error
+	for i, d := range deleteInstanceList {
+		err = vmmsClient.DeleteInstance(d.InstanceName, d.ProjectName, d.ZoneName)
+		if(err != nil) {
+			return err
+		}
+	}
+}
 //空いてるZoneの中で優先Zoneに作成対象Instanceを作成する
-func scheduler(createInstanceList, deleteInstanceList, si types.ScheduleInfo) {
-	
+func createScheduler(createInstanceList, si types.ScheduleInfo, vmmsClient *vmms.Client) {	
+	//どこのZoneで立てるか考える
+
+	for i, c := range createInstanceList {
+		err = vmmsClient.CreateInstance(c.ProblemID, c.MachineImageName, c.ProjectName, c.ZoneName)
+		if(err != nil) {
+			return err
+		}
+	}
 }
