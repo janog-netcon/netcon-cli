@@ -95,7 +95,8 @@ func contestInitCommandFunc(cmd *cobra.Command, args []string) error {
 	// 問題ごとに指定カウント分作成させた方が、途中でコケたときに扱いやすい
 	// 作成が完了した問題は設定ファイルから削除すればよくなる
 	for _, m := range ml {
-		for count > 0 {
+		c := count
+		for c > 0 {
 
 			fmt.Printf("[INFO] creating... problemID: %s, machineImageName: %s\n", m.ProblemID, m.MachineImageName)
 			i, err := cli.CreateInstance(m.ProblemID, m.MachineImageName)
@@ -105,9 +106,8 @@ func contestInitCommandFunc(cmd *cobra.Command, args []string) error {
 			}
 			fmt.Printf("[INFO] created: %#v\n", i)
 
-			count--
+			c--
 		}
-
 	}
 
 	fmt.Println("[INFO] success!!!!")
