@@ -1,0 +1,14 @@
+- problem_id: UUID
+  machine-image-id: image-aki
+- problem_id: UUID
+  machine-image-id: image-kit
+- problem_id: UUID
+  machine-image-id: image-kny
+- problem_id: UUID
+  machine-image-id: image-nas
+- problem_id: UUID
+  machine-image-id: image-pea
+- problem_id: UUID
+  machine-image-id: image-sc0
+- problem_id: UUID
+  machine-image-id: image-sc1

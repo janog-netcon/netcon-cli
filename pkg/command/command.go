@@ -17,6 +17,7 @@ func NewNetconCommand() *cobra.Command {
 		NewSchedulerCommand(),
 		NewScoreserverCommand(),
 		NewVmmsCommand(),
+		NewContestCommand(),
 	)
 
 	return rootCmd
