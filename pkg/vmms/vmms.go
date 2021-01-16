@@ -28,6 +28,8 @@ func NewClient(endpoint, credential string) *client {
 type createInstanceRequestBody struct {
 	ProblemID        string `json:"problem_id" validate:"required,uuid"`
 	MachineImageName string `json:"machine_image_name" validate:"required" example:"problem-sc0"`
+	Project          string `json:"project" validate:"required" example:"networkcontest"`
+	Zone             string `json:"zone" validate:"required" zone:"asia-northeast1-b"`
 }
 
 type createInstanceResponseBody struct {
@@ -46,12 +48,14 @@ type createInstanceErrorResponseBody struct {
 }
 
 // CreateInstance VMを作成する
-func (c *client) CreateInstance(problemID, machineImageName string) (*types.Instance, error) {
+func (c *client) CreateInstance(problemID, machineImageName, project, zone string) (*types.Instance, error) {
 	u := fmt.Sprintf("%s/instance", c.Endpoint)
 
 	reqBody := createInstanceRequestBody{
 		ProblemID:        problemID,
 		MachineImageName: machineImageName,
+		Project:          project,
+		Zone:             zone,
 	}
 
 	if err := validate.Struct(reqBody); err != nil {
@@ -94,6 +98,11 @@ func (c *client) CreateInstance(problemID, machineImageName string) (*types.Inst
 	return &instance, nil
 }
 
+type deleteInstanceRequestBody struct {
+	Project string `json:"project" validate:"required" example:"networkcontest"`
+	Zone    string `json:"zone" validate:"required" zone:"asia-northeast1-b"`
+}
+
 type deleteInstanceResponseBody struct {
 	Response struct {
 		IsDeleted bool `json:"is_deleted"`
@@ -101,10 +110,24 @@ type deleteInstanceResponseBody struct {
 }
 
 // DeleteInstance VMを削除する
-func (c *client) DeleteInstance(name string) error {
+func (c *client) DeleteInstance(name, project, zone string) error {
 	u := fmt.Sprintf("%s/instance/%s", c.Endpoint, name)
 
-	req, err := http.NewRequest("DELETE", u, nil)
+	reqBody := createInstanceRequestBody{
+		Project: project,
+		Zone:    zone,
+	}
+
+	if err := validate.Struct(reqBody); err != nil {
+		return err
+	}
+
+	reqBodyByte, err := json.Marshal(reqBody)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("DELETE", u, bytes.NewBuffer(reqBodyByte))
 	if err != nil {
 		return err
 	}

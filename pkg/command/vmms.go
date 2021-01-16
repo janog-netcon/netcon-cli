@@ -46,9 +46,13 @@ func NewVmmsInstanceCreateCommand() *cobra.Command {
 	flags := cmd.Flags()
 	flags.StringP("problem-id", "", "", "Problem ID")
 	flags.StringP("machine-image-name", "", "", "Machine Image Name")
+	flags.StringP("project", "", "", "Project")
+	flags.StringP("zone", "", "", "Zone")
 
 	cmd.MarkFlagRequired("problem-id")
 	cmd.MarkFlagRequired("machine-image-name")
+	cmd.MarkFlagRequired("project")
+	cmd.MarkFlagRequired("zone")
 
 	return cmd
 }
@@ -72,9 +76,17 @@ func vmmsInstanceCreateCommandFunc(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	project, err := flags.GetString("project")
+	if err != nil {
+		return err
+	}
+	zone, err := flags.GetString("zone")
+	if err != nil {
+		return err
+	}
 
 	cli := vmms.NewClient(endpoint, credential)
-	pes, err := cli.CreateInstance(problemID, machineImageName)
+	pes, err := cli.CreateInstance(problemID, machineImageName, project, zone)
 	if err != nil {
 		return err
 	}
@@ -93,8 +105,12 @@ func NewVmmsInstanceDeleteCommand() *cobra.Command {
 
 	flags := cmd.Flags()
 	flags.StringP("instance-name", "", "", "instance name")
+	flags.StringP("project", "", "", "Project")
+	flags.StringP("zone", "", "", "Zone")
 
 	cmd.MarkFlagRequired("instance-name")
+	cmd.MarkFlagRequired("project")
+	cmd.MarkFlagRequired("zone")
 
 	return cmd
 }
@@ -114,9 +130,17 @@ func vmmsInstanceDeleteCommandFunc(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	project, err := flags.GetString("project")
+	if err != nil {
+		return err
+	}
+	zone, err := flags.GetString("zone")
+	if err != nil {
+		return err
+	}
 
 	cli := vmms.NewClient(endpoint, credential)
-	if err := cli.DeleteInstance(instanceName); err != nil {
+	if err := cli.DeleteInstance(instanceName, project, zone); err != nil {
 		return err
 	}
 
