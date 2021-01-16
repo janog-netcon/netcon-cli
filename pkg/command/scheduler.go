@@ -17,6 +17,11 @@ func NewSchedulerCommand() *cobra.Command {
 		NewSchedulerStartCommand(),
 	)
 
+	flags := cmd.PersistentFlags()
+	flags.StringP("scoreserver-endpoint", "", "http://127.0.0.1:8905", "Score Server API Endpoint")
+	flags.StringP("vmms-endpoint", "", "http://127.0.0.1:8950", "vm-management-server Endpoint")
+	flags.StringP("vmms-credential", "", "", "Token")
+
 	return cmd
 }
 
@@ -39,6 +44,19 @@ func NewSchedulerStartCommand() *cobra.Command {
 
 func schedulerStartCommandFunc(cmd *cobra.Command, args []string) error {
 	flags := cmd.Flags()
+
+	scoreserverEndpoint, err := flags.GetString("scoreserver-endpoint")
+	if err != nil {
+		return err
+	}
+	vmmsEndpoint, err := flags.GetString("vmms-endpoint")
+	if err != nil {
+		return err
+	}
+	vmmsCredential, err := flags.GetString("vmms-credential")
+	if err != nil {
+		return err
+	}
 	configPath, err := flags.GetString("config")
 	if err != nil {
 		return err
