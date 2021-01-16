@@ -100,3 +100,51 @@ type Instance struct {
 	UserID           string `json:"user_id" validate:"required" example:"j47-user"`
 	Password         string `json:"password" validate:"required" example:"xxxxxxxx"`
 }
+
+//Schedule前に必要な情報
+type ScheduleInfo struct {
+	CurrentInstance int
+	//{"ProjectName": {"ZoneName": []ProblemInstance} }
+	PIS map[string]*ProjectInfo
+}
+
+type ProjectInfo struct {
+	CurrentInstance int
+	//{"ZoneName": ZoneInfo}
+	ZIS map[string]*ZoneInfo
+	//{"ProblemName": ProblemInstance}
+	ProblemInstances map[string]*ProblemInstance
+}
+
+//ProjectとZoneごとの情報
+type ZoneInfo struct {
+	MaxInstance     int
+	CurrentInstance int
+}
+
+//問題ごとの情報
+type ProblemInstance struct {
+	MachineImageName string
+	ProblemID        string
+	NotReady         int
+	Ready            int
+	UnderChallenge   int
+	UnderScoring     int
+	Abandoned        int
+	KeepPool         int
+	CurrentInstace   int
+}
+
+type CreateInstance struct {
+	ProblemID        string
+	MachineImageName string
+	ProjectName      string
+	ZoneName         string
+}
+
+//削除Instance
+type DeleteInstance struct {
+	InstanceName string
+	ProjectName  string
+	ZoneName     string
+}
