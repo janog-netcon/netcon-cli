@@ -3,6 +3,7 @@ package command
 import (
 	"fmt"
 	"io/ioutil"
+	"time"
 
 	"github.com/janog-netcon/netcon-cli/pkg/vmms"
 	"github.com/spf13/cobra"
@@ -104,15 +105,23 @@ func contestInitCommandFunc(cmd *cobra.Command, args []string) error {
 	// 作成が完了した問題は設定ファイルから削除すればよくなる
 	for _, m := range ml {
 		c := count
-		for c > 0 {
 
-			fmt.Printf("[INFO] creating... problemID: %s, machineImageName: %s, project: %s, zone: %s\n", m.ProblemID, m.MachineImageName, m.Project, m.Zone)
-			i, err := cli.CreateInstance(m.ProblemID, m.MachineImageName, m.Project, m.Zone)
-			if err != nil {
-				fmt.Println("[ERROR] failed to create instance.")
-				return err
+		for c > 0 {
+			// TODO: リトライカウントの実装
+			// 今は作成に成功するまで無限ループ
+			for {
+				fmt.Printf("[INFO] creating... problemID: %s, machineImageName: %s, project: %s, zone: %s\n", m.ProblemID, m.MachineImageName, m.Project, m.Zone)
+
+				i, err := cli.CreateInstance(m.ProblemID, m.MachineImageName, m.Project, m.Zone)
+				if err != nil {
+					fmt.Println("[ERROR] failed to create instance.")
+					// VMの作成に失敗した場合は5秒sleepする
+					time.Sleep(time.Second * 5)
+				} else {
+					fmt.Printf("[INFO] created: %#v\n", i)
+					break
+				}
 			}
-			fmt.Printf("[INFO] created: %#v\n", i)
 
 			c--
 		}
