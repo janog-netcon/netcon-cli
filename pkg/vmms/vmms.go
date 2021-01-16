@@ -12,14 +12,14 @@ import (
 	"golang.org/x/xerrors"
 )
 
-type client struct {
+type Client struct {
 	Endpoint   string
 	Credential string
 }
 
 // NewClient vm-management-serverのクライアントを返す
-func NewClient(endpoint, credential string) *client {
-	return &client{
+func NewClient(endpoint, credential string) *Client {
+	return &Client{
 		Endpoint:   endpoint,
 		Credential: credential,
 	}
@@ -48,7 +48,7 @@ type createInstanceErrorResponseBody struct {
 }
 
 // CreateInstance VMを作成する
-func (c *client) CreateInstance(problemID, machineImageName, project, zone string) (*types.Instance, error) {
+func (c *Client) CreateInstance(problemID, machineImageName, project, zone string) (*types.Instance, error) {
 	u := fmt.Sprintf("%s/instance", c.Endpoint)
 
 	reqBody := createInstanceRequestBody{
@@ -110,7 +110,7 @@ type deleteInstanceResponseBody struct {
 }
 
 // DeleteInstance VMを削除する
-func (c *client) DeleteInstance(name, project, zone string) error {
+func (c *Client) DeleteInstance(name, project, zone string) error {
 	u := fmt.Sprintf("%s/instance/%s", c.Endpoint, name)
 
 	reqBody := createInstanceRequestBody{

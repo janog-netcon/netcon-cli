@@ -17,19 +17,19 @@ import (
 	"golang.org/x/xerrors"
 )
 
-type client struct {
+type Client struct {
 	Endpoint string
 }
 
 // NewClient スコアサーバのクライアントを返す
-func NewClient(endpoint string) *client {
-	return &client{
+func NewClient(endpoint string) *Client {
+	return &Client{
 		Endpoint: endpoint,
 	}
 }
 
 // ListProblemEnvironment VM一覧を取得する
-func (c *client) ListProblemEnvironment() (*[]types.ProblemEnvironment, error) {
+func (c *Client) ListProblemEnvironment() (*[]types.ProblemEnvironment, error) {
 	u := fmt.Sprintf("%s/problem-environments", c.Endpoint)
 
 	req, err := http.NewRequest("GET", u, nil)
@@ -91,7 +91,7 @@ func (c *client) ListProblemEnvironment() (*[]types.ProblemEnvironment, error) {
 //     "machine_image_name": "image-110"
 //   }
 // ]
-func (c *client) GetProblemEnvironment(name string) (*[]types.ProblemEnvironment, error) {
+func (c *Client) GetProblemEnvironment(name string) (*[]types.ProblemEnvironment, error) {
 	u := fmt.Sprintf("%s/problem-environments/%s", c.Endpoint, name)
 
 	req, err := http.NewRequest("GET", u, nil)
