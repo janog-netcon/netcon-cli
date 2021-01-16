@@ -1,9 +1,11 @@
 package command
 
 import (
-	"github.com/janog-netcon/netcon-cli/pkg/scoreserver"
-	"github.com/janog-netcon/netcon-cli/pkg/types"
+	"fmt"
+	"io/ioutil"
+
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
 )
 
 func NewSchedulerCommand() *cobra.Command {
@@ -22,11 +24,19 @@ func NewSchedulerCommand() *cobra.Command {
 	return cmd
 }
 
+type schedulerConfig struct {
+}
+
 func NewSchedulerStartCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:  "start",
 		RunE: schedulerStartCommandFunc,
 	}
+
+	flags := cmd.Flags()
+	flags.StringP("config", "c", "", "config file path")
+
+	cmd.MarkFlagRequired("config")
 
 	return cmd
 }
@@ -37,51 +47,26 @@ func schedulerStartCommandFunc(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	//configをパースする
 
-	//情報をsiにまとめる(siを問題ごとに初期化する)
-	var si types.ScheduleInfo
-	var pis []types.ProblemInstance
-	//score serverのデータを取得し集計する
-	si, err := aggregateInstance(endpoint, si)
-	//configよりInstanceの作成リストを削除リストを作る
-	//Instance削除リストから対象Instanceを削除する
-	//Instance作成リストから対象ProblemのInstanceを作成する
+	configPath, err := flags.GetString("config")
+	if err != nil {
+		return err
+	}
+
+	// read mapping file
+	bytes, err := ioutil.ReadFile(configPath)
+	if err != nil {
+		return err
+	}
+
+	cfg := []schedulerConfig{}
+	if err := yaml.Unmarshal(bytes, &cfg); err != nil {
+		return err
+	}
+
+	fmt.Printf("[INFO] config: %#v\n", cfg)
+
+	// schedulerの起動
+
 	return nil
-}
-
-func aggregateInstance(endpoint string, si ScheduleInfo) {
-	//Score Serverからデータを取得
-	cli := scoreserver.NewClient(endpoint)
-	pes, err := cli.ListProblemEnvironment()
-	if err != nil {
-		return nil, err
-	}
-
-	b, err := json.Marshal(pes)
-	if err != nil {
-		return nil, err
-	}
-
-	for i, p := range b {
-		min := strings.Split(p.MachineImageName, "-")
-		pn := min[-2:-1]
-		si.ProblemInstances[pn].MachineImageName = p.MachineImageName
-		switch p.Status {
-		case "NOT_READY":
-			si.ProblemInstances[pn].NotReady = si.ProblemInstances[pn].NotReady + 1
-		case "READY":
-			si.ProblemInstances[pn].Ready = si.ProblemInstances[pn].Ready + 1
-		case "UNDER_CHALLENGE":
-			si.ProblemInstances[pn].UnderChallenge = si.ProblemInstances[pn].UnderChallenge + 1
-		case "UNDER_SCORING":
-			si.ProblemInstances[pn].UnderScoring = si.ProblemInstances[pn].UnderScoring + 1
-		case "ABANDONED":
-			si.ProblemInstances[pn].Abandoned = si.ProblemInstances[pn].Abandoned + 1
-		case "":
-			si.ProblemInstances[pn].Ready = si.ProblemInstances[pn].Ready + 1
-		}
-	}
-
-	return si, nil
 }
