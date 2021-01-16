@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	"github.com/janog-netcon/netcon-cli/pkg/scoreserver"
+	"github.com/janog-netcon/netcon-cli/pkg/vmms"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 )
@@ -21,6 +23,7 @@ func NewSchedulerCommand() *cobra.Command {
 	flags.StringP("scoreserver-endpoint", "", "http://127.0.0.1:8905", "Score Server API Endpoint")
 	flags.StringP("vmms-endpoint", "", "http://127.0.0.1:8950", "vm-management-server Endpoint")
 	flags.StringP("vmms-credential", "", "", "Token")
+	flags.StringP("config", "", "./netcon.conf", "Scheduler Configuration")
 
 	return cmd
 }
@@ -76,6 +79,8 @@ func schedulerStartCommandFunc(cmd *cobra.Command, args []string) error {
 	fmt.Printf("[INFO] config: %#v\n", cfg)
 
 	// schedulerの起動
+	scoreserverClient := scoreserver.NewClient(scoreserverEndpoint)
+	vmmsClient := vmms.NewClient(vmmsEndpoint, vmmsCredential)
 
 	return nil
 }
