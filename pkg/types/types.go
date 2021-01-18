@@ -104,6 +104,7 @@ type Instance struct {
 // SchedulerConfig schedulerの設定ファイルで使用する
 type SchedulerConfig struct {
 	Setting struct {
+		Cron     string `yaml:"cron"`
 		Projects []struct {
 			Name  string `yaml:"name"`
 			Zones []struct {

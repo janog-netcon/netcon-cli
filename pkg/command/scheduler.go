@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	"github.com/janog-netcon/netcon-cli/pkg/scheduler"
 	"github.com/janog-netcon/netcon-cli/pkg/scoreserver"
 	"github.com/janog-netcon/netcon-cli/pkg/types"
 	"github.com/janog-netcon/netcon-cli/pkg/vmms"
+	"github.com/robfig/cron/v3"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 )
 
@@ -63,6 +66,12 @@ func schedulerStartCommandFunc(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// logger
+	lg, err := zap.NewDevelopment()
+	if err != nil {
+		return err
+	}
+
 	// read mapping file
 	bytes, err := ioutil.ReadFile(configPath)
 	if err != nil {
@@ -74,13 +83,22 @@ func schedulerStartCommandFunc(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Printf("[INFO] config: %#v\n", cfg)
+	lg.Info(fmt.Sprintf("[INFO] config: %#v\n", cfg))
 
 	// schedulerの起動
 	scoreserverClient := scoreserver.NewClient(scoreserverEndpoint)
 	vmmsClient := vmms.NewClient(vmmsEndpoint, vmmsCredential)
-	fmt.Println(scoreserverClient)
-	fmt.Println(vmmsClient)
+
+	c := cron.New()
+	c.AddFunc(cfg.Setting.Cron, func() {
+		if err := scheduler.SchedulerReady(&cfg, scoreserverClient, vmmsClient, lg); err != nil {
+			fmt.Println(err)
+		}
+	})
+	c.Start()
+
+	for {
+	}
 
 	return nil
 }
