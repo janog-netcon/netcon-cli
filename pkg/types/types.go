@@ -104,6 +104,13 @@ type Instance struct {
 // SchedulerConfig schedulerの設定ファイルで使用する
 type SchedulerConfig struct {
 	Setting struct {
+		Scoreserver struct {
+			Endpoint string `yaml:"endpoint"`
+		} `yaml:"scoreserver"`
+		Vmms struct {
+			Endpoint   string `yaml:"endpoint"`
+			Credential string `yaml:"credential"`
+		} `yaml:"vmms"`
 		Cron     string `yaml:"cron"`
 		Projects []struct {
 			Name  string `yaml:"name"`

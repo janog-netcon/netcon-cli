@@ -1,4 +1,9 @@
 setting:
+  scoreserver:
+    endpoint: http://127.0.0.1:8905
+  vmms:
+    endpoint: http://127.0.0.1:8950
+    credential: ""
   cron: "@every 2s"
   projects:
     - name: networkcontest
