@@ -101,6 +101,23 @@ type Instance struct {
 	Password         string `json:"password" validate:"required" example:"xxxxxxxx"`
 }
 
+// SchedulerConfig schedulerの設定ファイルで使用する
+type SchedulerConfig struct {
+	Setting struct {
+		Projects []struct {
+			Name  string `yaml:"name"`
+			Zones []struct {
+				Name        string `yaml:"name"`
+				MaxInstance int    `yaml:"max_instance"`
+			} `yaml:"zones"`
+		} `yaml:"projects"`
+		Problems []struct {
+			Name     string `yaml:"name"`
+			KeepPool int    `yaml:"keep_pool"`
+		} `yaml:"problems"`
+	} `yaml:"setting"`
+}
+
 //Schedule前に必要な情報
 type ScheduleInfo struct {
 	CurrentInstance int

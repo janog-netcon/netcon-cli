@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 
 	"github.com/janog-netcon/netcon-cli/pkg/scoreserver"
+	"github.com/janog-netcon/netcon-cli/pkg/types"
 	"github.com/janog-netcon/netcon-cli/pkg/vmms"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
@@ -26,9 +27,6 @@ func NewSchedulerCommand() *cobra.Command {
 	flags.StringP("config", "", "./netcon.conf", "Scheduler Configuration")
 
 	return cmd
-}
-
-type schedulerConfig struct {
 }
 
 func NewSchedulerStartCommand() *cobra.Command {
@@ -71,7 +69,7 @@ func schedulerStartCommandFunc(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	cfg := []schedulerConfig{}
+	cfg := types.SchedulerConfig{}
 	if err := yaml.Unmarshal(bytes, &cfg); err != nil {
 		return err
 	}
@@ -81,6 +79,8 @@ func schedulerStartCommandFunc(cmd *cobra.Command, args []string) error {
 	// schedulerの起動
 	scoreserverClient := scoreserver.NewClient(scoreserverEndpoint)
 	vmmsClient := vmms.NewClient(vmmsEndpoint, vmmsCredential)
+	fmt.Println(scoreserverClient)
+	fmt.Println(vmmsClient)
 
 	return nil
 }
