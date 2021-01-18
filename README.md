@@ -64,5 +64,5 @@ netcon vmms instance delete --credential ${CREDENTIAL} --instance-name image-sc0
 
 ```bash
 PROBLEMS=$(netcon scoreserver instance list | jq -r '.[].name')
-echo $PROBLEMS | xargs -n1 ./netcon vmms instance delete --credential ${CREDENTIAL} --instance-name
+echo $PROBLEMS | xargs -n1 ./netcon vmms instance delete --credential ${CREDENTIAL} --project networkcontest --zone asia-northeast1-b --instance-name
 ```

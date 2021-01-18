@@ -101,6 +101,32 @@ type Instance struct {
 	Password         string `json:"password" validate:"required" example:"xxxxxxxx"`
 }
 
+// SchedulerConfig schedulerの設定ファイルで使用する
+type SchedulerConfig struct {
+	Setting struct {
+		Scoreserver struct {
+			Endpoint string `yaml:"endpoint"`
+		} `yaml:"scoreserver"`
+		Vmms struct {
+			Endpoint   string `yaml:"endpoint"`
+			Credential string `yaml:"credential"`
+		} `yaml:"vmms"`
+		Cron     string `yaml:"cron"`
+		Projects []struct {
+			Name  string `yaml:"name"`
+			Zones []struct {
+				Name        string `yaml:"name"`
+				MaxInstance int    `yaml:"max_instance"`
+			} `yaml:"zones"`
+		} `yaml:"projects"`
+		Problems []struct {
+			Name            string `yaml:"name"`
+			KeepPool        int    `yaml:"keep_pool"`
+			DefaultInstance int    `yaml:"default_instance"`
+		} `yaml:"problems"`
+	} `yaml:"setting"`
+}
+
 //Schedule前に必要な情報
 type ScheduleInfo struct {
 	CurrentInstance int

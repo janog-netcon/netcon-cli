@@ -113,7 +113,7 @@ type deleteInstanceResponseBody struct {
 func (c *Client) DeleteInstance(name, project, zone string) error {
 	u := fmt.Sprintf("%s/instance/%s", c.Endpoint, name)
 
-	reqBody := createInstanceRequestBody{
+	reqBody := deleteInstanceRequestBody{
 		Project: project,
 		Zone:    zone,
 	}

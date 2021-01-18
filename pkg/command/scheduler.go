@@ -4,9 +4,13 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	"github.com/janog-netcon/netcon-cli/pkg/scheduler"
 	"github.com/janog-netcon/netcon-cli/pkg/scoreserver"
+	"github.com/janog-netcon/netcon-cli/pkg/types"
 	"github.com/janog-netcon/netcon-cli/pkg/vmms"
+	"github.com/robfig/cron/v3"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 )
 
@@ -20,15 +24,9 @@ func NewSchedulerCommand() *cobra.Command {
 	)
 
 	flags := cmd.PersistentFlags()
-	flags.StringP("scoreserver-endpoint", "", "http://127.0.0.1:8905", "Score Server API Endpoint")
-	flags.StringP("vmms-endpoint", "", "http://127.0.0.1:8950", "vm-management-server Endpoint")
-	flags.StringP("vmms-credential", "", "", "Token")
 	flags.StringP("config", "", "./netcon.conf", "Scheduler Configuration")
 
 	return cmd
-}
-
-type schedulerConfig struct {
 }
 
 func NewSchedulerStartCommand() *cobra.Command {
@@ -48,19 +46,13 @@ func NewSchedulerStartCommand() *cobra.Command {
 func schedulerStartCommandFunc(cmd *cobra.Command, args []string) error {
 	flags := cmd.Flags()
 
-	scoreserverEndpoint, err := flags.GetString("scoreserver-endpoint")
-	if err != nil {
-		return err
-	}
-	vmmsEndpoint, err := flags.GetString("vmms-endpoint")
-	if err != nil {
-		return err
-	}
-	vmmsCredential, err := flags.GetString("vmms-credential")
-	if err != nil {
-		return err
-	}
 	configPath, err := flags.GetString("config")
+	if err != nil {
+		return err
+	}
+
+	// logger
+	lg, err := zap.NewDevelopment()
 	if err != nil {
 		return err
 	}
@@ -71,16 +63,27 @@ func schedulerStartCommandFunc(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	cfg := []schedulerConfig{}
+	cfg := types.SchedulerConfig{}
 	if err := yaml.Unmarshal(bytes, &cfg); err != nil {
 		return err
 	}
 
-	fmt.Printf("[INFO] config: %#v\n", cfg)
+	lg.Info(fmt.Sprintf("[INFO] config: %#v\n", cfg))
 
 	// schedulerの起動
-	scoreserverClient := scoreserver.NewClient(scoreserverEndpoint)
-	vmmsClient := vmms.NewClient(vmmsEndpoint, vmmsCredential)
+	scoreserverClient := scoreserver.NewClient(cfg.Setting.Scoreserver.Endpoint)
+	vmmsClient := vmms.NewClient(cfg.Setting.Vmms.Endpoint, cfg.Setting.Vmms.Credential)
+
+	c := cron.New()
+	c.AddFunc(cfg.Setting.Cron, func() {
+		if err := scheduler.SchedulerReady(&cfg, scoreserverClient, vmmsClient, lg); err != nil {
+			fmt.Println(err)
+		}
+	})
+	c.Start()
+
+	for {
+	}
 
 	return nil
 }

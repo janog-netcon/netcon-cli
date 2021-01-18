@@ -144,5 +144,7 @@ func vmmsInstanceDeleteCommandFunc(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	fmt.Printf("[INFO] Deleted successfully: %s\n", instanceName)
+
 	return nil
 }

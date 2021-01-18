@@ -1,0 +1,42 @@
+setting:
+  scoreserver:
+    endpoint: http://127.0.0.1:8905
+  vmms:
+    endpoint: http://127.0.0.1:8950
+    credential: ""
+  cron: "@every 2s"
+  projects:
+    - name: networkcontest
+      zones:
+        - name: asia-northeast1
+          max_instance: 30
+        - name: asia-northeast2
+          max_instance: 30
+    - name: networkcontest2
+      zones:
+        - name: asia-northeast1
+          max_instance: 30
+        - name: asia-northeast2
+          max_instance: 30
+  problems:
+    - name: aki
+      keep_pool: 10
+      default_instance: 3
+    - name: kit
+      keep_pool: 10
+      default_instance: 3
+    - name: kny
+      keep_pool: 10
+      default_instance: 3
+    - name: nas
+      keep_pool: 10
+      default_instance: 3
+    - name: pea
+      keep_pool: 10
+      default_instance: 3
+    - name: sc0
+      keep_pool: 10
+      default_instance: 3
+    - name: sc1
+      keep_pool: 10
+      default_instance: 3
