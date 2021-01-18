@@ -119,6 +119,7 @@ type ProjectInfo struct {
 //ProjectとZoneごとの情報
 type ZoneInfo struct {
 	MaxInstance     int
+	Prioty          int
 	CurrentInstance int
 }
 
@@ -132,14 +133,21 @@ type ProblemInstance struct {
 	UnderScoring     int
 	Abandoned        int
 	KeepPool         int
-	CurrentInstace   int
+	CurrentInstance  int
+}
+
+type ZonePrioty struct {
+	ProjectName     string
+	ZoneName        string
+	Priority        int
+	MaxInstance     int
+	CurrentInstance int
 }
 
 type CreateInstance struct {
 	ProblemID        string
 	MachineImageName string
 	ProjectName      string
-	ZoneName         string
 }
 
 //削除Instance
