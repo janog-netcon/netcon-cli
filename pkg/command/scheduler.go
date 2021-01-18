@@ -24,9 +24,6 @@ func NewSchedulerCommand() *cobra.Command {
 	)
 
 	flags := cmd.PersistentFlags()
-	flags.StringP("scoreserver-endpoint", "", "http://127.0.0.1:8905", "Score Server API Endpoint")
-	flags.StringP("vmms-endpoint", "", "http://127.0.0.1:8950", "vm-management-server Endpoint")
-	flags.StringP("vmms-credential", "", "", "Token")
 	flags.StringP("config", "", "./netcon.conf", "Scheduler Configuration")
 
 	return cmd
@@ -49,18 +46,6 @@ func NewSchedulerStartCommand() *cobra.Command {
 func schedulerStartCommandFunc(cmd *cobra.Command, args []string) error {
 	flags := cmd.Flags()
 
-	scoreserverEndpoint, err := flags.GetString("scoreserver-endpoint")
-	if err != nil {
-		return err
-	}
-	vmmsEndpoint, err := flags.GetString("vmms-endpoint")
-	if err != nil {
-		return err
-	}
-	vmmsCredential, err := flags.GetString("vmms-credential")
-	if err != nil {
-		return err
-	}
 	configPath, err := flags.GetString("config")
 	if err != nil {
 		return err
@@ -86,8 +71,8 @@ func schedulerStartCommandFunc(cmd *cobra.Command, args []string) error {
 	lg.Info(fmt.Sprintf("[INFO] config: %#v\n", cfg))
 
 	// schedulerの起動
-	scoreserverClient := scoreserver.NewClient(scoreserverEndpoint)
-	vmmsClient := vmms.NewClient(vmmsEndpoint, vmmsCredential)
+	scoreserverClient := scoreserver.NewClient(cfg.Setting.Scoreserver.Endpoint)
+	vmmsClient := vmms.NewClient(cfg.Setting.Vmms.Endpoint, cfg.Setting.Vmms.Credential)
 
 	c := cron.New()
 	c.AddFunc(cfg.Setting.Cron, func() {
