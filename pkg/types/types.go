@@ -113,8 +113,9 @@ type SchedulerConfig struct {
 			} `yaml:"zones"`
 		} `yaml:"projects"`
 		Problems []struct {
-			Name     string `yaml:"name"`
-			KeepPool int    `yaml:"keep_pool"`
+			Name            string `yaml:"name"`
+			KeepPool        int    `yaml:"keep_pool"`
+			DefaultInstance int    `yaml:"default_instance"`
 		} `yaml:"problems"`
 	} `yaml:"setting"`
 }

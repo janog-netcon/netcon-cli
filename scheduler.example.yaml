@@ -16,15 +16,22 @@ setting:
   problems:
     - name: aki
       keep_pool: 10
+      default_instance: 3
     - name: kit
       keep_pool: 10
+      default_instance: 3
     - name: kny
       keep_pool: 10
+      default_instance: 3
     - name: nas
       keep_pool: 10
+      default_instance: 3
     - name: pea
       keep_pool: 10
+      default_instance: 3
     - name: sc0
       keep_pool: 10
+      default_instance: 3
     - name: sc1
       keep_pool: 10
+      default_instance: 3
