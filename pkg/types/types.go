@@ -127,28 +127,6 @@ type SchedulerConfig struct {
 	} `yaml:"setting"`
 }
 
-//Schedule前に必要な情報
-type ScheduleInfo struct {
-	CurrentInstance int
-	//{"ProjectName": {"ZoneName": []ProblemInstance} }
-	PIS map[string]*ProjectInfo
-}
-
-type ProjectInfo struct {
-	CurrentInstance int
-	//{"ZoneName": ZoneInfo}
-	ZIS map[string]*ZoneInfo
-	//{"ProblemName": ProblemInstance}
-	ProblemInstances map[string]*ProblemInstance
-}
-
-//ProjectとZoneごとの情報
-type ZoneInfo struct {
-	MaxInstance     int
-	Prioty          int
-	CurrentInstance int
-}
-
 //問題ごとの情報
 type ProblemInstance struct {
 	MachineImageName string
@@ -159,10 +137,17 @@ type ProblemInstance struct {
 	UnderScoring     int
 	Abandoned        int
 	KeepPool         int
+	KIS              []KeepInstance
 	CurrentInstance  int
 }
 
-type ZonePrioty struct {
+type KeepInstance struct {
+	InstanceName string
+	ProjectName  string
+	ZoneName     string
+}
+
+type ZonePriority struct {
 	ProjectName     string
 	ZoneName        string
 	Priority        int
@@ -171,13 +156,14 @@ type ZonePrioty struct {
 }
 
 type CreateInstance struct {
+	ProblemName      string
 	ProblemID        string
 	MachineImageName string
 	ProjectName      string
 }
 
-//削除Instance
 type DeleteInstance struct {
+	ProblemName  string
 	InstanceName string
 	ProjectName  string
 	ZoneName     string
