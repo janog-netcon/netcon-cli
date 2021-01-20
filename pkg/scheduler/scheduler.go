@@ -139,6 +139,7 @@ func DeleteScheduler(dis []types.DeleteInstance, vmmsClient *vmms.Client, lg *za
 			return fmt.Errorf("Remains on the CreateInstanceList. %s", msg)
 		}
 	}
+	return nil
 }
 
 type ZPS []types.ZonePriority
