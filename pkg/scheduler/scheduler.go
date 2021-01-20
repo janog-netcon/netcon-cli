@@ -159,7 +159,7 @@ func CreateScheduler(cis []types.CreateInstance, zps []types.ZonePriority, vmmsC
 	//優先度の高いZoneから作る
 	for _, zp := range zps {
 		//Zoneに空きがある限りはそこで作る
-		for _; zp.MaxInstance-zp.CurrentInstance > 0; _ {
+		for zp.MaxInstance-zp.CurrentInstance > 0 {
 			ci, err := vmmsClient.CreateInstance(cis[i].ProblemID, cis[i].MachineImageName, zp.ProjectName, zp.ZoneName)
 			if err != nil {
 				break
