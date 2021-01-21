@@ -84,6 +84,8 @@ type ProblemEnvironment struct {
 	ProblemID        uuid.UUID `json:"problem_id"`
 	CreatedAt        time.Time `json:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at"`
+	ProjectName      string    `json:"project"`
+	ZoneName         string    `json:"zone"`
 	Name             string    `json:"name"`
 	Service          string    `json:"service"`
 	Port             int       `json:"port"`
@@ -117,6 +119,7 @@ type SchedulerConfig struct {
 			Zones []struct {
 				Name        string `yaml:"name"`
 				MaxInstance int    `yaml:"max_instance"`
+				Priority    int    `yaml:"priority"`
 			} `yaml:"zones"`
 		} `yaml:"projects"`
 		Problems []struct {
@@ -145,6 +148,7 @@ type KeepInstance struct {
 	InstanceName string
 	ProjectName  string
 	ZoneName     string
+	CreatedAt    time.Time
 }
 
 type ZonePriority struct {

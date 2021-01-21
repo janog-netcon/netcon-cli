@@ -77,7 +77,7 @@ func AggregateInstance(pis map[string]*types.ProblemInstance, zps []types.ZonePr
 			pis[pn].NotReady = pis[pn].NotReady + 1
 		case "READY":
 			pis[pn].Ready = pis[pn].Ready + 1
-			ki := types.KeepInstance{p.InstanceName, p.ProjectName, p.ZoneName}
+			ki := types.KeepInstance{p.InstanceName, p.ProjectName, p.ZoneName, p.CreatedAt}
 			pis[pn].KIS = append(pis[pn].KIS, ki)
 		case "UNDER_CHALLENGE":
 			pis[pn].UnderChallenge = pis[pn].UnderChallenge + 1
@@ -101,24 +101,32 @@ func AggregateInstance(pis map[string]*types.ProblemInstance, zps []types.ZonePr
 
 //---VMを削除するリストの作成
 //問題のReady+NotReady+Abandoned数がKeepInstanceを超えてはいけない。超えてたら削除対象。
+//削除するInstanceは新しく出来たものから。
 //---VMを作成するリストの作成
 //問題のReady+NotReady+Abandoned数がKeepPoolより少ない場合は作成対象にする
 // 作成リストと削除リストを返す
-//→ Instanceをどこに作成するかのアルゴリズムはまた別
+
+type KIS []types.KeepInstance
+
+func (a KIS) Len() int           { return len(a) }
+func (a KIS) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a KIS) Less(i, j int) bool { return a[j].CreatedAt.After(a[i].CreatedAt) }
+
 func SchedulingList(pis map[string]*types.ProblemInstance, lg *zap.Logger) ([]types.CreateInstance, []types.DeleteInstance) {
 	lg.Info("Scheduler: Create Operation List")
 	var ciList []types.CreateInstance
 	var diList []types.DeleteInstance
-	dindex := 0
 	for pn, pi := range pis {
+		sort.Sort(KIS(pi.KIS))
 		//問題のReady+NotReady+Abandoned数がKeepInstanceを超えてはいけない。超えてたら削除対象。
-		if pi.Ready+pi.NotReady+pi.Abandoned > pi.KeepPool {
-			diList = append(diList, types.DeleteInstance{pn, pi.KIS[dindex].InstanceName, pi.KIS[dindex].ProjectName, pi.KIS[dindex].ZoneName})
-			dindex++
+		for i := 0; pi.Ready+pi.NotReady+pi.Abandoned > pi.KeepPool; i++ {
+			diList = append(diList, types.DeleteInstance{pn, pi.KIS[i].InstanceName, pi.KIS[i].ProjectName, pi.KIS[i].ZoneName})
+			pi.KeepPool++
 		}
 		//問題のReady+NotReady+Abandoned数がKeepPoolより少ない場合は作成対象にする
-		if pi.Ready+pi.NotReady+pi.Abandoned < pi.KeepPool {
-			ciList = append(ciList, types.CreateInstance{pi.ProblemID, pi.MachineImageName, pi.KIS[dindex].ProjectName, pi.KIS[dindex].ZoneName})
+		for i := 0; pi.Ready+pi.NotReady+pi.Abandoned < pi.KeepPool; i++ {
+			ciList = append(ciList, types.CreateInstance{pi.ProblemID, pi.MachineImageName, pi.KIS[i].ProjectName, pi.KIS[i].ZoneName})
+			pi.NotReady++
 		}
 	}
 	return ciList, diList
@@ -165,7 +173,7 @@ func CreateScheduler(cis []types.CreateInstance, zps []types.ZonePriority, vmmsC
 			if err != nil {
 				break
 			}
-			lg.Info("CreateInstance: %s", ci.InstanceName)
+			lg.Info("CreateInstance: %s %s", cis[i].ProblemName, ci.InstanceName)
 			//作れたら次のInstanceの処理に移る
 			i++
 			zp.CurrentInstance++
@@ -184,5 +192,5 @@ func CreateScheduler(cis []types.CreateInstance, zps []types.ZonePriority, vmmsC
 	for _, v := range cis[i-1:] {
 		msg = msg + v.ProblemName
 	}
-	return fmt.Errorf("Remains on the CreateInstanceList. %s", msg)
+	return fmt.Errorf("Error. %s Remains on the CreateInstanceList. %s", err, msg)
 }
