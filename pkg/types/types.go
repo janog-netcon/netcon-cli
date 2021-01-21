@@ -81,7 +81,7 @@ type ProblemEnvironment struct {
 	Host             string    `json:"host"`
 	User             string    `json:"user"`
 	Password         string    `json:"password"`
-	ProblemID        uuid.UUID `json:"problem_id"`
+	ProblemID        string    `json:"problem_id"`
 	CreatedAt        time.Time `json:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at"`
 	ProjectName      string    `json:"project"`
@@ -142,6 +142,7 @@ type ProblemInstance struct {
 	KeepPool         int
 	KIS              []KeepInstance
 	CurrentInstance  int
+	DefaultInstance  int
 }
 
 type KeepInstance struct {
@@ -164,6 +165,7 @@ type CreateInstance struct {
 	ProblemID        string
 	MachineImageName string
 	ProjectName      string
+	ZoneName         string
 }
 
 type DeleteInstance struct {
