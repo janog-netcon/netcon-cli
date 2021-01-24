@@ -197,7 +197,7 @@ func CreateScheduler(cis []types.CreateInstance, zps []types.ZonePriority, vmmsC
 	}
 	//err処理。
 	msg := ""
-	for _, v := range cis[i-1:] {
+	for _, v := range cis[i:] {
 		msg = msg + v.ProblemName + ", "
 	}
 	return fmt.Errorf("Error. %s Remains on the CreateInstanceList. %s", err, msg)
