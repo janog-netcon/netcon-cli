@@ -70,6 +70,10 @@ func AggregateInstance(pis map[string]*types.ProblemInstance, zps []types.ZonePr
 	for _, p := range *pes {
 		min := strings.Split(*p.MachineImageName, "-")
 		pn := min[0]
+		if _, ok := pis[pn]; ok {
+			lg.Error("This problem name not exists. The value is " + pn)
+			continue
+		}
 		pis[pn].MachineImageName = *p.MachineImageName
 		pis[pn].ProblemID = p.ProblemID
 		switch *p.InnerStatus {
