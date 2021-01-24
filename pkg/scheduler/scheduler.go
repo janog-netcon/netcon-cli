@@ -43,6 +43,7 @@ func SchedulerReady(cfg *types.SchedulerConfig, ssClient *scoreserver.Client, vm
 func InitSchedulerInfo(cfg *types.SchedulerConfig, lg *zap.Logger) (map[string]*types.ProblemInstance, []types.ZonePriority) {
 	lg.Info("Scheduler: Init SchedulerInfo")
 	var pis map[string]*types.ProblemInstance
+	pis = map[string]*types.ProblemInstance{}
 	//Init pis
 	for _, p := range cfg.Setting.Problems {
 		pis[p.Name] = &types.ProblemInstance{MachineImageName: "", ProblemID: "", NotReady: 0, Ready: 0, UnderChallenge: 0, UnderScoring: 0, Abandoned: 0, KeepPool: p.KeepPool, KIS: []types.KeepInstance{}, CurrentInstance: 0, DefaultInstance: p.DefaultInstance}
