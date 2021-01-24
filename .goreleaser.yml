@@ -47,7 +47,8 @@ dockers:
       - build-linux
     dockerfile: ./Dockerfile
     image_templates:
-      - hnron-public.sakuracr.jp/netcon-cli:{{.Version}}
+      - "hnron-public.sakuracr.jp/netcon-cli:{{.Version}}"
+      - "hnron-public.sakuracr.jp/netcon-cli:latest"
     build_flag_templates:
       - "--pull"
       - "--label=org.opencontainers.image.created={{.Date}}"
