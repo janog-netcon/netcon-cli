@@ -66,6 +66,7 @@ func AggregateInstance(pis map[string]*types.ProblemInstance, zps []types.ZonePr
 	if err != nil {
 		return nil, nil, err
 	}
+	lg.Info("Scheduler: Aggregate Got ProblemEnviroments")
 
 	for _, p := range *pes {
 		min := strings.Split(*p.MachineImageName, "-")
