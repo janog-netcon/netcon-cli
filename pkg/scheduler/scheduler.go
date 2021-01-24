@@ -195,6 +195,7 @@ func CreateScheduler(cis []types.CreateInstance, zps []types.ZonePriority, vmmsC
 	i := 0
 	var err error
 	err = nil
+	lg.Info("len cis: " + strconv.Itoa(len(cis)))
 	//優先度の高いZoneから作る
 	for _, zp := range zps {
 		//Zoneに空きがある限りはそこで作る
@@ -215,9 +216,12 @@ func CreateScheduler(cis []types.CreateInstance, zps []types.ZonePriority, vmmsC
 		}
 	}
 	//err処理。
-	msg := ""
-	for _, v := range cis[i:] {
-		msg = msg + v.ProblemName + ", "
+	if len(cis) > i {
+		msg := ""
+		for _, v := range cis[i:] {
+			msg = msg + v.ProblemName + ", "
+		}
+		return fmt.Errorf("Remains on the CreateInstanceList. %s", msg)
 	}
-	return fmt.Errorf("Remains on the CreateInstanceList. %s", msg)
+	return nil
 }
