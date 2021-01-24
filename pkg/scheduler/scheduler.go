@@ -80,21 +80,26 @@ func AggregateInstance(pis map[string]*types.ProblemInstance, zps []types.ZonePr
 		}
 		pis[pn].MachineImageName = *p.MachineImageName
 		pis[pn].ProblemID = p.ProblemID
-		switch *p.InnerStatus {
-		case "NOT_READY":
-			pis[pn].NotReady = pis[pn].NotReady + 1
-		case "READY":
+		if p.InnerStatus == nil {
 			pis[pn].Ready = pis[pn].Ready + 1
 			pis[pn].KIS = append(pis[pn].KIS, types.KeepInstance{InstanceName: p.Name, ProjectName: p.ProjectName, ZoneName: p.ZoneName, CreatedAt: p.CreatedAt})
-		case "UNDER_CHALLENGE":
-			pis[pn].UnderChallenge = pis[pn].UnderChallenge + 1
-		case "UNDER_SCORING":
-			pis[pn].UnderScoring = pis[pn].UnderScoring + 1
-		case "ABANDONED":
-			pis[pn].Abandoned = pis[pn].Abandoned + 1
-		case "":
-			pis[pn].Ready = pis[pn].Ready + 1
-			pis[pn].KIS = append(pis[pn].KIS, types.KeepInstance{InstanceName: p.Name, ProjectName: p.ProjectName, ZoneName: p.ZoneName, CreatedAt: p.CreatedAt})
+		} else {
+			switch *p.InnerStatus {
+			case "NOT_READY":
+				pis[pn].NotReady = pis[pn].NotReady + 1
+			case "READY":
+				pis[pn].Ready = pis[pn].Ready + 1
+				pis[pn].KIS = append(pis[pn].KIS, types.KeepInstance{InstanceName: p.Name, ProjectName: p.ProjectName, ZoneName: p.ZoneName, CreatedAt: p.CreatedAt})
+			case "UNDER_CHALLENGE":
+				pis[pn].UnderChallenge = pis[pn].UnderChallenge + 1
+			case "UNDER_SCORING":
+				pis[pn].UnderScoring = pis[pn].UnderScoring + 1
+			case "ABANDONED":
+				pis[pn].Abandoned = pis[pn].Abandoned + 1
+			case "":
+				pis[pn].Ready = pis[pn].Ready + 1
+				pis[pn].KIS = append(pis[pn].KIS, types.KeepInstance{InstanceName: p.Name, ProjectName: p.ProjectName, ZoneName: p.ZoneName, CreatedAt: p.CreatedAt})
+			}
 		}
 		pis[pn].CurrentInstance = pis[pn].CurrentInstance + 1
 		//ZoneごとのInstance数を集計する
