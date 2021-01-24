@@ -38,6 +38,24 @@ archives:
       386: i386
       amd64: x86_64
 
+dockers:
+  - goos: linux
+    goarch: amd64
+    binaries:
+      - netcon
+    builds:
+      - build-linux
+    dockerfile: ./Dockerfile
+    image_templates:
+      - hnron-public.sakuracr.jp/netcon-cli:{{.Version}}
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+    skip_push: true
+
 # publish
 release:
   prerelease: auto
