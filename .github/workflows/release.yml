@@ -8,7 +8,7 @@ on:
     - '*'
 
 env:
-  REPOSITORY_NAME: hnron-public.sakuracr.jp
+  REGISTRY_NAME: hnron-public.sakuracr.jp
   IMAGE_NAME: netcon
 
 jobs:
@@ -33,11 +33,12 @@ jobs:
 
 
       - name: Push to sakuracr
-        uses: docker/build-push-action@v1
+        uses: docker/build-push-action@v2
         with:
           username: ${{ secrets.SAKURACR_USERNAME }}
           password: ${{ secrets.SAKURACR_PASSWORD }}
-          repository: $REPOSITORY_NAME/$IMAGE_NAME
+          registry: $REGISTRY_NAME
+          repository: $IMAGE_NAME
           tag_with_ref: true
 
       #- name: Log into registry
