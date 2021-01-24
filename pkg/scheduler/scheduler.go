@@ -198,7 +198,7 @@ func CreateScheduler(cis []types.CreateInstance, zps []types.ZonePriority, vmmsC
 	//優先度の高いZoneから作る
 	for _, zp := range zps {
 		//Zoneに空きがある限りはそこで作る
-		for zp.MaxInstance-zp.CurrentInstance > 0 {
+		for zp.MaxInstance-zp.CurrentInstance > 0 && len(cis) > i {
 			ci, err := vmmsClient.CreateInstance(cis[i].ProblemID, cis[i].MachineImageName, zp.ProjectName, zp.ZoneName)
 			if err != nil {
 				lg.Error("CreateInstance: Cannot CreateInstance. " + err.Error())
@@ -208,10 +208,6 @@ func CreateScheduler(cis []types.CreateInstance, zps []types.ZonePriority, vmmsC
 			//作れたら次のInstanceの処理に移る
 			i++
 			zp.CurrentInstance++
-			//Instanceがなくなったら終了
-			if len(cis) <= i {
-				return nil
-			}
 		}
 		//errが入ってる場合は処理を終わらせerr処理をする
 		if err != nil {
