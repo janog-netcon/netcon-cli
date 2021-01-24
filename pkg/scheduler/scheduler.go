@@ -152,7 +152,7 @@ func DeleteScheduler(dis []types.DeleteInstance, vmmsClient *vmms.Client, lg *za
 			for _, v := range dis[i-1:] {
 				msg = msg + v.ProblemName + ": " + v.InstanceName + ", "
 			}
-			return fmt.Errorf("Remains on the CreateInstanceList. %s", msg)
+			return fmt.Errorf("%w Remains on the CreateInstanceList. %s", err, msg)
 		}
 	}
 	return nil
@@ -200,5 +200,5 @@ func CreateScheduler(cis []types.CreateInstance, zps []types.ZonePriority, vmmsC
 	for _, v := range cis[i:] {
 		msg = msg + v.ProblemName + ", "
 	}
-	return fmt.Errorf("Error. %s Remains on the CreateInstanceList. %s", err, msg)
+	return fmt.Errorf("%w Remains on the CreateInstanceList. %s", err, msg)
 }
