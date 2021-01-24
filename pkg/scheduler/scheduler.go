@@ -179,6 +179,7 @@ func CreateScheduler(cis []types.CreateInstance, zps []types.ZonePriority, vmmsC
 		for zp.MaxInstance-zp.CurrentInstance > 0 {
 			ci, err := vmmsClient.CreateInstance(cis[i].ProblemID, cis[i].MachineImageName, zp.ProjectName, zp.ZoneName)
 			if err != nil {
+				lg.Error("CreateInstance: Cannot CreateInstance. " + err.Error())
 				break
 			}
 			lg.Info("CreateInstance: " + cis[i].ProblemName + " " + ci.InstanceName)
@@ -200,5 +201,5 @@ func CreateScheduler(cis []types.CreateInstance, zps []types.ZonePriority, vmmsC
 	for _, v := range cis[i:] {
 		msg = msg + v.ProblemName + ", "
 	}
-	return fmt.Errorf("%w Remains on the CreateInstanceList. %s", err, msg)
+	return fmt.Errorf("Remains on the CreateInstanceList. %s", msg)
 }
