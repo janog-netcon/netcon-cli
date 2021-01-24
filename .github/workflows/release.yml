@@ -9,7 +9,7 @@ on:
 
 env:
   REGISTRY_NAME: hnron-public.sakuracr.jp
-  IMAGE_NAME: netcon
+  IMAGE_NAME: netcon-cli
 
 jobs:
   goreleaser:
@@ -62,8 +62,6 @@ jobs:
 
           echo IMAGE_ID=$IMAGE_ID
           echo VERSION=$VERSION
-
-          docker image ls
 
           #docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:$VERSION
