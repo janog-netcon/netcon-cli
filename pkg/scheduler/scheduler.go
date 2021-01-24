@@ -85,6 +85,7 @@ func AggregateInstance(pis map[string]*types.ProblemInstance, zps []types.ZonePr
 			pis[pn].Abandoned = pis[pn].Abandoned + 1
 		case "":
 			pis[pn].Ready = pis[pn].Ready + 1
+			pis[pn].KIS = append(pis[pn].KIS, types.KeepInstance{InstanceName: p.Name, ProjectName: p.ProjectName, ZoneName: p.ZoneName, CreatedAt: p.CreatedAt})
 		}
 		pis[pn].CurrentInstance = pis[pn].CurrentInstance + 1
 		//ZoneごとのInstance数を集計する
@@ -144,7 +145,7 @@ func DeleteScheduler(dis []types.DeleteInstance, vmmsClient *vmms.Client, lg *za
 		if err != nil {
 			msg := ""
 			for _, v := range dis[i-1:] {
-				msg = msg + v.ProblemName + ","
+				msg = msg + v.ProblemName + ": " + v.InstanceName + ", "
 			}
 			return fmt.Errorf("Remains on the CreateInstanceList. %s", msg)
 		}
@@ -192,7 +193,7 @@ func CreateScheduler(cis []types.CreateInstance, zps []types.ZonePriority, vmmsC
 	//err処理。
 	msg := ""
 	for _, v := range cis[i-1:] {
-		msg = msg + v.ProblemName
+		msg = msg + v.ProblemName + ", "
 	}
 	return fmt.Errorf("Error. %s Remains on the CreateInstanceList. %s", err, msg)
 }
