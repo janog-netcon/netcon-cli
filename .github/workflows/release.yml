@@ -37,7 +37,7 @@ jobs:
         with:
           username: ${{ secrets.SAKURACR_USERNAME }}
           password: ${{ secrets.SAKURACR_PASSWORD }}
-          repository: ${{ REPOSITORY_NAME }}/${{ IMAGE_NAME }}
+          repository: $REPOSITORY_NAME/$IMAGE_NAME
           tag_with_ref: true
 
       #- name: Log into registry
