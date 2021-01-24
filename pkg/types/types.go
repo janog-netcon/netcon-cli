@@ -164,8 +164,6 @@ type CreateInstance struct {
 	ProblemName      string
 	ProblemID        string
 	MachineImageName string
-	ProjectName      string
-	ZoneName         string
 }
 
 type DeleteInstance struct {

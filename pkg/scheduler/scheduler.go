@@ -133,7 +133,7 @@ func SchedulingList(pis map[string]*types.ProblemInstance, lg *zap.Logger) ([]ty
 		}
 		//問題のReady+NotReady+Abandoned数がKeepPoolより少ない場合は作成対象にする
 		for i := 0; pi.Ready+pi.NotReady+pi.Abandoned < pi.KeepPool; i++ {
-			ciList = append(ciList, types.CreateInstance{ProblemName: pn, ProblemID: pi.ProblemID, MachineImageName: pi.MachineImageName, ProjectName: pi.KIS[i].ProjectName, ZoneName: pi.KIS[i].ZoneName})
+			ciList = append(ciList, types.CreateInstance{ProblemName: pn, ProblemID: pi.ProblemID, MachineImageName: pi.MachineImageName})
 			pi.NotReady++
 		}
 	}
