@@ -9,7 +9,7 @@ on:
 
 env:
   REGISTRY_NAME: hnron-public.sakuracr.jp
-  IMAGE_NAME: netcon
+  IMAGE_NAME: netcon-cli
 
 jobs:
   goreleaser:
@@ -32,36 +32,37 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN  }}
 
 
-      - name: Push to sakuracr
-        uses: docker/build-push-action@v1
-        with:
-          username: ${{ secrets.SAKURACR_USERNAME }}
-          password: ${{ secrets.SAKURACR_PASSWORD }}
-          registry: $REGISTRY_NAME
-          repository: $IMAGE_NAME
-          tag_with_ref: true
+      #- name: Push to sakuracr
+      #  uses: docker/build-push-action@v1
+      #  with:
+      #    username: ${{ secrets.SAKURACR_USERNAME }}
+      #    password: ${{ secrets.SAKURACR_PASSWORD }}
+      #    registry: hnron-public.sakuracr.jp
+      #    repository: netcon
+      #    tag_with_ref: true
 
-      #- name: Log into registry
-      #  run: echo "${{ secrets.SAKURACR_PASSWORD }}" | docker login $REPOSITORY_NAME -u ${{ secrets.SAKURACR_USERNAME }} --password-stdin
-      #- name: Push image
-      #  run: |
-      #    IMAGE_ID=$REPOSITORY_NAME/$IMAGE_NAME
 
-      #    # Change all uppercase to lowercase
-      #    IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+      - name: Log into registry
+        run: echo "${{ secrets.SAKURACR_PASSWORD }}" | docker login $REGISTRY_NAME -u ${{ secrets.SAKURACR_USERNAME }} --password-stdin
+      - name: Push image
+        run: |
+          IMAGE_ID=$REGISTRY_NAME/$IMAGE_NAME
 
-      #    # Strip git ref prefix from version
-      #    VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          # Change all uppercase to lowercase
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
 
-      #    # Strip "v" prefix from tag name
-      #    [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+          # Strip git ref prefix from version
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
 
-      #    # Use Docker `latest` tag convention
-      #    [ "$VERSION" == "main" ] && VERSION=latest
+          # Strip "v" prefix from tag name
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
 
-      #    echo IMAGE_ID=$IMAGE_ID
-      #    echo VERSION=$VERSION
+          # Use Docker `latest` tag convention
+          [ "$VERSION" == "main" ] && VERSION=latest
 
-      #    #docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
-      #    docker push $IMAGE_ID:$VERSION
+          echo IMAGE_ID=$IMAGE_ID
+          echo VERSION=$VERSION
+
+          #docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
+          docker push $IMAGE_ID:$VERSION
 
