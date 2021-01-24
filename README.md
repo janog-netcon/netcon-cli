@@ -1,5 +1,11 @@
 # netcon-cli
 
+## scheduler
+
+```sh
+netcon scheduler start --config scheduler.yaml
+```
+
 ## contestの初期化
 
 スコアサーバーで問題を開いたときにURLに書かれているUUIDがProblemIDになる
