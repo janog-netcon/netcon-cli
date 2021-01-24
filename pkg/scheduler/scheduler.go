@@ -89,7 +89,7 @@ func AggregateInstance(pis map[string]*types.ProblemInstance, zps []types.ZonePr
 		pis[pn].CurrentInstance = pis[pn].CurrentInstance + 1
 		//ZoneごとのInstance数を集計する
 		for _, zp := range zps {
-			if zp.ProjectName == p.ProjectName && zp.ZoneName == p.ProjectName {
+			if zp.ProjectName == p.ProjectName && zp.ZoneName == p.ZoneName {
 				zp.CurrentInstance = zp.CurrentInstance + 1
 			}
 		}
