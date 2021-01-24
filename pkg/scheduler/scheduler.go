@@ -3,6 +3,7 @@ package scheduler
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"go.uber.org/zap"
@@ -22,6 +23,8 @@ func SchedulerReady(cfg *types.SchedulerConfig, ssClient *scoreserver.Client, vm
 		lg.Error("Scheduler Aggregate Error: " + err.Error())
 		return err
 	}
+	//Logging ProblemInstanceInfo
+	PISLogging(pis, lg)
 	//ConfigよりInstanceの作成リストを削除リストを作る
 	ciList, diList := SchedulingList(pis, lg)
 
@@ -102,6 +105,19 @@ func AggregateInstance(pis map[string]*types.ProblemInstance, zps []types.ZonePr
 		}
 	}
 	return pis, zps, nil
+}
+
+func PISLogging(pis map[string]*types.ProblemInstance, lg *zap.Logger) {
+	for pn, pi := range pis {
+		lg.Info("--------Problem Environments--------")
+		lg.Info("Problem Name, ID: " + pn + ", " + pi.ProblemID)
+		lg.Info("Ready: " + strconv.Itoa(pi.Ready))
+		lg.Info("NotReady: " + strconv.Itoa(pi.NotReady))
+		lg.Info("UnderChallenge: " + strconv.Itoa(pi.UnderChallenge))
+		lg.Info("UnderScoring: " + strconv.Itoa(pi.UnderScoring))
+		lg.Info("Abandoned: " + strconv.Itoa(pi.Abandoned))
+		lg.Info("CurrentInstance: " + strconv.Itoa(pi.CurrentInstance))
+	}
 }
 
 //---VMを削除するリストの作成
