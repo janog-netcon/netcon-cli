@@ -104,11 +104,8 @@ func AggregateInstance(pis map[string]*types.ProblemInstance, zps []*types.ZoneP
 		pis[pn].CurrentInstance = pis[pn].CurrentInstance + 1
 		//ZoneごとのInstance数を集計する
 		for _, zp := range zps {
-			lg.Info("Debug zps: zp.PN:" + zp.ProjectName + " p.PN:" + p.ProjectName + " zp.ZN:" + p.ZoneName + " p.ZN:" + p.ZoneName)
 			if zp.ProjectName == p.ProjectName && zp.ZoneName == p.ZoneName {
-				lg.Info("Debug zps: match" + strconv.Itoa(zp.CurrentInstance))
 				zp.CurrentInstance = zp.CurrentInstance + 1
-				lg.Info("Debug zps: matched" + strconv.Itoa(zp.CurrentInstance))
 			}
 		}
 	}
@@ -150,10 +147,10 @@ type KIS []types.KeepInstance
 
 func (a KIS) Len() int           { return len(a) }
 func (a KIS) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a KIS) Less(i, j int) bool { return a[j].CreatedAt.After(a[i].CreatedAt) }
+func (a KIS) Less(i, j int) bool { return a[j].CreatedAt.Before(a[i].CreatedAt) }
 
 func SchedulingList(pis map[string]*types.ProblemInstance, lg *zap.Logger) ([]types.CreateInstance, []types.DeleteInstance) {
-	lg.Info("Scheduler: Create Operation List")
+	lg.Info("Scheduler: Generate Operation List")
 	ciList := []types.CreateInstance{}
 	diList := []types.DeleteInstance{}
 	for pn, pi := range pis {
