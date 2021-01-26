@@ -104,6 +104,7 @@ func AggregateInstance(pis map[string]*types.ProblemInstance, zps []types.ZonePr
 		pis[pn].CurrentInstance = pis[pn].CurrentInstance + 1
 		//ZoneごとのInstance数を集計する
 		for _, zp := range zps {
+			lg.Info("Debug zps: zp.PN:" + zp.ProjectName + " p.PN:" + p.ProjectName + " zp.ZN:" + p.ZoneName + "p.ZN:" + p.ZoneName)
 			if zp.ProjectName == p.ProjectName && zp.ZoneName == p.ZoneName {
 				zp.CurrentInstance = zp.CurrentInstance + 1
 			}
@@ -147,11 +148,12 @@ func SchedulingList(pis map[string]*types.ProblemInstance, lg *zap.Logger) ([]ty
 		//問題のReady+NotReady+Abandoned数がKeepInstanceを超えてはいけない。超えてたら削除対象。
 		//default値以下のinstance数の場合はpoolを消さない
 		for i := 0; pi.Ready+pi.NotReady+pi.Abandoned > pi.KeepPool; i++ {
-			if pi.CurrentInstance < pi.DefaultInstance {
+			if pi.CurrentInstance <= pi.DefaultInstance {
 				break
 			}
 			diList = append(diList, types.DeleteInstance{ProblemName: pn, InstanceName: pi.KIS[i].InstanceName, ProjectName: pi.KIS[i].ProjectName, ZoneName: pi.KIS[i].ZoneName})
 			pi.Ready--
+			pi.CurrentInstance--
 		}
 		//問題のReady+NotReady+Abandoned数がKeepPoolより少ない場合は作成対象にする
 		for i := 0; pi.Ready+pi.NotReady+pi.Abandoned < pi.KeepPool; i++ {
@@ -176,6 +178,7 @@ func DeleteScheduler(dis []types.DeleteInstance, vmmsClient *vmms.Client, lg *za
 			}
 			return fmt.Errorf("%w Remains on the CreateInstanceList. %s", err, msg)
 		}
+		lg.Info("DeleteInstance: " + d.ProblemName + " " + d.InstanceName)
 	}
 	return nil
 }
@@ -199,6 +202,7 @@ func CreateScheduler(cis []types.CreateInstance, zps []types.ZonePriority, vmmsC
 	//優先度の高いZoneから作る
 	for _, zp := range zps {
 		//Zoneに空きがある限りはそこで作る
+		lg.Info("Debug: " + zp.ZoneName + " current: " + strconv.Itoa(zp.CurrentInstance) + " max:" + strconv.Itoa(zp.MaxInstance))
 		for zp.MaxInstance-zp.CurrentInstance > 0 && len(cis) > i {
 			ci, err := vmmsClient.CreateInstance(cis[i].ProblemID, cis[i].MachineImageName, zp.ProjectName, zp.ZoneName)
 			if err != nil {
@@ -209,6 +213,7 @@ func CreateScheduler(cis []types.CreateInstance, zps []types.ZonePriority, vmmsC
 			//作れたら次のInstanceの処理に移る
 			i++
 			zp.CurrentInstance++
+			lg.Info("Debug" + strconv.Itoa(zp.CurrentInstance))
 		}
 		//errが入ってる場合は処理を終わらせerr処理をする
 		if err != nil {
