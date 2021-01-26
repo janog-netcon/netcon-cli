@@ -25,6 +25,7 @@ func SchedulerReady(cfg *types.SchedulerConfig, ssClient *scoreserver.Client, vm
 	}
 	//Logging ProblemInstanceInfo
 	PISLogging(pis, lg)
+	ZPSLogging(zps, lg)
 	//ConfigよりInstanceの作成リストを削除リストを作る
 	ciList, diList := SchedulingList(pis, lg)
 
@@ -43,7 +44,7 @@ func SchedulerReady(cfg *types.SchedulerConfig, ssClient *scoreserver.Client, vm
 	return nil
 }
 
-func InitSchedulerInfo(cfg *types.SchedulerConfig, lg *zap.Logger) (map[string]*types.ProblemInstance, []types.ZonePriority) {
+func InitSchedulerInfo(cfg *types.SchedulerConfig, lg *zap.Logger) (map[string]*types.ProblemInstance, []*types.ZonePriority) {
 	lg.Info("Scheduler: Init SchedulerInfo")
 	var pis map[string]*types.ProblemInstance
 	pis = map[string]*types.ProblemInstance{}
@@ -51,18 +52,17 @@ func InitSchedulerInfo(cfg *types.SchedulerConfig, lg *zap.Logger) (map[string]*
 	for _, p := range cfg.Setting.Problems {
 		pis[p.Name] = &types.ProblemInstance{MachineImageName: "", ProblemID: "", NotReady: 0, Ready: 0, UnderChallenge: 0, UnderScoring: 0, Abandoned: 0, KeepPool: p.KeepPool, KIS: []types.KeepInstance{}, CurrentInstance: 0, DefaultInstance: p.DefaultInstance}
 	}
-	var zps []types.ZonePriority
+	var zps []*types.ZonePriority
 	//Init zps
 	for _, p := range cfg.Setting.Projects {
 		for _, z := range p.Zones {
-			zp := types.ZonePriority{ProjectName: p.Name, ZoneName: z.Name, Priority: z.Priority, MaxInstance: z.MaxInstance, CurrentInstance: 0}
-			zps = append(zps, zp)
+			zps = append(zps, &types.ZonePriority{ProjectName: p.Name, ZoneName: z.Name, Priority: z.Priority, MaxInstance: z.MaxInstance, CurrentInstance: 0})
 		}
 	}
 	return pis, zps
 }
 
-func AggregateInstance(pis map[string]*types.ProblemInstance, zps []types.ZonePriority, ssClient *scoreserver.Client, lg *zap.Logger) (map[string]*types.ProblemInstance, []types.ZonePriority, error) {
+func AggregateInstance(pis map[string]*types.ProblemInstance, zps []*types.ZonePriority, ssClient *scoreserver.Client, lg *zap.Logger) (map[string]*types.ProblemInstance, []*types.ZonePriority, error) {
 	lg.Info("Scheduler: Aggregate ScoreServer Info")
 	//ScoreServerからデータを取得
 	pes, err := ssClient.ListProblemEnvironment()
@@ -104,9 +104,11 @@ func AggregateInstance(pis map[string]*types.ProblemInstance, zps []types.ZonePr
 		pis[pn].CurrentInstance = pis[pn].CurrentInstance + 1
 		//ZoneごとのInstance数を集計する
 		for _, zp := range zps {
-			lg.Info("Debug zps: zp.PN:" + zp.ProjectName + " p.PN:" + p.ProjectName + " zp.ZN:" + p.ZoneName + "p.ZN:" + p.ZoneName)
+			lg.Info("Debug zps: zp.PN:" + zp.ProjectName + " p.PN:" + p.ProjectName + " zp.ZN:" + p.ZoneName + " p.ZN:" + p.ZoneName)
 			if zp.ProjectName == p.ProjectName && zp.ZoneName == p.ZoneName {
+				lg.Info("Debug zps: match" + strconv.Itoa(zp.CurrentInstance))
 				zp.CurrentInstance = zp.CurrentInstance + 1
+				lg.Info("Debug zps: matched" + strconv.Itoa(zp.CurrentInstance))
 			}
 		}
 	}
@@ -123,6 +125,17 @@ func PISLogging(pis map[string]*types.ProblemInstance, lg *zap.Logger) {
 		lg.Info("UnderScoring: " + strconv.Itoa(pi.UnderScoring))
 		lg.Info("Abandoned: " + strconv.Itoa(pi.Abandoned))
 		lg.Info("CurrentInstance: " + strconv.Itoa(pi.CurrentInstance))
+	}
+}
+
+func ZPSLogging(zps []*types.ZonePriority, lg *zap.Logger) {
+	for _, zp := range zps {
+		lg.Info("--------Zone Priority Info--------")
+		lg.Info("Project Name: " + zp.ProjectName)
+		lg.Info("Zone Name:" + zp.ZoneName)
+		lg.Info("Priority: " + strconv.Itoa(zp.Priority))
+		lg.Info("MaxInstance: " + strconv.Itoa(zp.MaxInstance))
+		lg.Info("CurrentInstance: " + strconv.Itoa(zp.CurrentInstance))
 	}
 }
 
@@ -183,14 +196,14 @@ func DeleteScheduler(dis []types.DeleteInstance, vmmsClient *vmms.Client, lg *za
 	return nil
 }
 
-type ZPS []types.ZonePriority
+type ZPS []*types.ZonePriority
 
 func (a ZPS) Len() int           { return len(a) }
 func (a ZPS) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ZPS) Less(i, j int) bool { return a[i].Priority < a[j].Priority }
 
 //空いてるZoneの中で優先Zoneに作成対象Instanceを作成する
-func CreateScheduler(cis []types.CreateInstance, zps []types.ZonePriority, vmmsClient *vmms.Client, lg *zap.Logger) error {
+func CreateScheduler(cis []types.CreateInstance, zps []*types.ZonePriority, vmmsClient *vmms.Client, lg *zap.Logger) error {
 	lg.Info("Scheduler: Create Instances")
 	//優先Zone順に作っていく
 	sort.Sort(ZPS(zps))
