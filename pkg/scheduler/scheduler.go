@@ -32,7 +32,7 @@ func SchedulerReady(cfg *types.SchedulerConfig, ssClient *scoreserver.Client, vm
 	//Instance削除リストから対象Instanceを削除する
 	err = DeleteScheduler(abList, vmmsClient, lg)
 	if err != nil {
-		lg.Error("Scheduler ABANDONED DeleteScheduler: " + err.Error())
+		lg.Error("Scheduler DeleteScheduler: AbandonedInstance. " + err.Error())
 		return err
 	}
 
@@ -71,13 +71,13 @@ func InitSchedulerInfo(cfg *types.SchedulerConfig, lg *zap.Logger) (map[string]*
 
 func AggregateInstance(pis map[string]*types.ProblemInstance, zps []*types.ZonePriority, ssClient *scoreserver.Client, lg *zap.Logger) (map[string]*types.ProblemInstance, []*types.ZonePriority, []types.DeleteInstance, error) {
 	lg.Info("Scheduler: AggregateInstance")
-	//ScoreServerからデータを取得
+	//ScoreServerからデータ取得
 	pes, err := ssClient.ListProblemEnvironment()
 	if err != nil {
 		return nil, nil, nil, err
 	}
 	lg.Info("Scheduler: Aggregate. Got ProblemEnviroments")
-	//ABANDOND Delete List
+	//ABANDOND DeleteList
 	abList := []types.DeleteInstance{}
 
 	for _, p := range *pes {
@@ -148,13 +148,6 @@ func ZPSLogging(zps []*types.ZonePriority, lg *zap.Logger) {
 	}
 }
 
-//---VMを削除するリストの作成
-//問題のReady+NotReady+Abandoned数がKeepInstanceを超えてはいけない。超えてたら削除対象。
-//削除するInstanceは新しく出来たものから。
-//---VMを作成するリストの作成
-//問題のReady+NotReady+Abandoned数がKeepPoolより少ない場合は作成対象にする
-// 作成リストと削除リストを返す
-
 type KIS []types.KeepInstance
 
 func (a KIS) Len() int           { return len(a) }
@@ -166,10 +159,11 @@ func SchedulingList(pis map[string]*types.ProblemInstance, lg *zap.Logger) ([]ty
 	ciList := []types.CreateInstance{}
 	diList := []types.DeleteInstance{}
 	for pn, pi := range pis {
+		//削除するInstanceは新しく出来たものから。
 		sort.Sort(KIS(pi.KIS))
 		//問題のReady+NotReady+Abandoned数がKeepInstanceを超えてはいけない。超えてたら削除対象。
-		//default値以下のinstance数の場合はpoolを消さない
 		for i := 0; pi.Ready+pi.NotReady+pi.Abandoned > pi.KeepPool; i++ {
+			//default値以下のinstance数の場合はpoolを消さない. 消すReadyがなければ終了.
 			if pi.CurrentInstance <= pi.DefaultInstance || pi.Ready <= i {
 				break
 			}
@@ -216,7 +210,6 @@ func CreateScheduler(cis []types.CreateInstance, zps []*types.ZonePriority, vmms
 	lg.Info("Scheduler: CreateScheduler")
 	//優先Zone順に作っていく
 	sort.Sort(ZPS(zps))
-	//Instanceを順番につくっていく
 	i := 0
 	var err error
 	err = nil
@@ -230,16 +223,14 @@ func CreateScheduler(cis []types.CreateInstance, zps []*types.ZonePriority, vmms
 				break
 			}
 			lg.Info("CreatedInstance: " + cis[i].ProblemName + " " + ci.InstanceName)
-			//作れたら次のInstanceの処理に移る
 			i++
 			zp.CurrentInstance++
 		}
-		//errが入ってる場合は処理を終わらせerr処理をする
 		if err != nil {
 			break
 		}
 	}
-	//err処理。
+	//cisが残っていたらerrorとして返す
 	if len(cis) > i {
 		msg := ""
 		for _, v := range cis[i:] {
