@@ -183,7 +183,7 @@ func DeleteScheduler(dis []types.DeleteInstance, vmmsClient *vmms.Client, lg *za
 		err = vmmsClient.DeleteInstance(d.InstanceName, d.ProjectName, d.ZoneName)
 		if err != nil {
 			msg := ""
-			for _, v := range dis[i-1:] {
+			for _, v := range dis[i:] {
 				msg = msg + v.ProblemName + ": " + v.InstanceName + ", "
 			}
 			return fmt.Errorf("%w Remains on the CreateInstanceList. %s", err, msg)
