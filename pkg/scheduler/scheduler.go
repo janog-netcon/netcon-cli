@@ -27,14 +27,14 @@ func SchedulerReady(cfg *types.SchedulerConfig, ssClient *scoreserver.Client, vm
 	PISLogging(pis, lg)
 	ZPSLogging(zps, lg)
 	//ConfigよりInstanceの作成リストを削除リストを作る
-	ciList, _ := SchedulingList(pis, lg)
+	ciList, diList := SchedulingList(pis, lg)
 
 	//Instance削除リストから対象Instanceを削除する
-	//err = DeleteScheduler(diList, vmmsClient, lg)
-	//if err != nil {
-	//	lg.Error("Scheduler DeleteScheduler: " + err.Error())
-	//	return err
-	//}
+	err = DeleteScheduler(diList, vmmsClient, lg)
+	if err != nil {
+		lg.Error("Scheduler DeleteScheduler: " + err.Error())
+		return err
+	}
 	//Instance作成リストから対象ProblemのInstanceを作成する
 	err = CreateScheduler(ciList, zps, vmmsClient, lg)
 	if err != nil {
