@@ -76,9 +76,11 @@ func schedulerStartCommandFunc(cmd *cobra.Command, args []string) error {
 
 	c := cron.New()
 	c.AddFunc(cfg.Setting.Cron, func() {
+		lg.Info("cron start!!")
 		if err := scheduler.SchedulerReady(&cfg, scoreserverClient, vmmsClient, lg); err != nil {
 			fmt.Println(err)
 		}
+		lg.Info("cron finish!!")
 	})
 	c.Start()
 
