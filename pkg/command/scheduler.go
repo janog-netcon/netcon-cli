@@ -3,6 +3,7 @@ package command
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/janog-netcon/netcon-cli/pkg/scheduler"
@@ -12,6 +13,7 @@ import (
 	"github.com/robfig/cron/v3"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"gopkg.in/yaml.v2"
 )
 
@@ -40,6 +42,7 @@ func NewSchedulerStartCommand() *cobra.Command {
 
 	flags := cmd.Flags()
 	flags.BoolP("oneshot", "", false, "cronでの繰り返し実行を行わずに1度のみ実行する")
+	flags.StringP("log-file-path", "", "./scheduler.log", "Scheduler logfile")
 
 	return cmd
 }
@@ -55,12 +58,19 @@ func schedulerStartCommandFunc(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-
-	// logger
-	lg, err := zap.NewDevelopment()
+	logFilePath, err := flags.GetString("log-file-path")
 	if err != nil {
 		return err
 	}
+
+	// logger
+	/*
+		lg, err := zap.NewDevelopment()
+		if err != nil {
+			return err
+		}
+	*/
+	lg := newLogger(logFilePath)
 
 	// read mapping file
 	bytes, err := ioutil.ReadFile(configPath)
@@ -73,7 +83,7 @@ func schedulerStartCommandFunc(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	lg.Info(fmt.Sprintf("[INFO] config: %#v\n", cfg))
+	// lg.Info(fmt.Sprintf("[INFO] config: %#v\n", cfg))
 
 	// schedulerの起動
 	scoreserverClient := scoreserver.NewClient(cfg.Setting.Scoreserver.Endpoint)
@@ -90,11 +100,11 @@ func schedulerStartCommandFunc(cmd *cobra.Command, args []string) error {
 
 	c := cron.New()
 	c.AddFunc(cfg.Setting.Cron, func() {
-		lg.Info("cron start!!")
+		// lg.Info("cron start!!")
 		if err := scheduler.SchedulerReady(&cfg, scoreserverClient, vmmsClient, lg); err != nil {
 			fmt.Println(err)
 		}
-		lg.Info("cron finish!!")
+		// lg.Info("cron finish!!")
 	})
 	c.Start()
 
@@ -103,4 +113,41 @@ func schedulerStartCommandFunc(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+// https://k1low.hatenablog.com/entry/2018/08/15/100000
+func newLogger(logFilePath string) *zap.Logger {
+	encoderConfig := zapcore.EncoderConfig{
+		TimeKey:        "time",
+		LevelKey:       "level",
+		NameKey:        "name",
+		CallerKey:      "caller",
+		MessageKey:     "msg",
+		StacktraceKey:  "stacktrace",
+		EncodeLevel:    zapcore.LowercaseLevelEncoder,
+		EncodeTime:     zapcore.ISO8601TimeEncoder,
+		EncodeDuration: zapcore.StringDurationEncoder,
+		EncodeCaller:   zapcore.ShortCallerEncoder,
+	}
+
+	file, _ := os.OpenFile(logFilePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+
+	consoleCore := zapcore.NewCore(
+		zapcore.NewConsoleEncoder(encoderConfig),
+		zapcore.AddSync(os.Stdout),
+		zapcore.DebugLevel,
+	)
+
+	logCore := zapcore.NewCore(
+		zapcore.NewJSONEncoder(encoderConfig),
+		zapcore.AddSync(file),
+		zapcore.InfoLevel,
+	)
+
+	logger := zap.New(zapcore.NewTee(
+		consoleCore,
+		logCore,
+	))
+
+	return logger
 }
