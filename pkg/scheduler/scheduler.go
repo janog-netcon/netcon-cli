@@ -208,11 +208,9 @@ func CreateScheduler(cis []types.CreateInstance, zps []*types.ZonePriority, vmms
 	i := 0
 	var err error
 	err = nil
-	lg.Info("len cis: " + strconv.Itoa(len(cis)))
 	//優先度の高いZoneから作る
 	for _, zp := range zps {
 		//Zoneに空きがある限りはそこで作る
-		lg.Info("Debug: " + zp.ZoneName + " current: " + strconv.Itoa(zp.CurrentInstance) + " max:" + strconv.Itoa(zp.MaxInstance))
 		for zp.MaxInstance-zp.CurrentInstance > 0 && len(cis) > i {
 			ci, err := vmmsClient.CreateInstance(cis[i].ProblemID, cis[i].MachineImageName, zp.ProjectName, zp.ZoneName)
 			if err != nil {
@@ -223,7 +221,6 @@ func CreateScheduler(cis []types.CreateInstance, zps []*types.ZonePriority, vmms
 			//作れたら次のInstanceの処理に移る
 			i++
 			zp.CurrentInstance++
-			lg.Info("Debug" + strconv.Itoa(zp.CurrentInstance))
 		}
 		//errが入ってる場合は処理を終わらせerr処理をする
 		if err != nil {
