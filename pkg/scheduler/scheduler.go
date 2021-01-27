@@ -92,6 +92,7 @@ func AggregateInstance(pis map[string]*types.ProblemInstance, zps []*types.ZoneP
 				pis[pn].Ready = pis[pn].Ready + 1
 				pis[pn].KIS = append(pis[pn].KIS, types.KeepInstance{InstanceName: p.Name, ProjectName: p.ProjectName, ZoneName: p.ZoneName, CreatedAt: p.CreatedAt})
 			case "UNDER_CHALLENGE":
+				fmt.Println("UnderChallenge: " + strconv.Itoa(pis[pn].UnderChallenge))
 				pis[pn].UnderChallenge = pis[pn].UnderChallenge + 1
 			case "UNDER_SCORING":
 				pis[pn].UnderScoring = pis[pn].UnderScoring + 1
