@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/janog-netcon/netcon-cli/pkg/scheduler"
@@ -99,8 +100,12 @@ func schedulerStartCommandFunc(cmd *cobra.Command, args []string) error {
 	}
 
 	c := cron.New()
+	// lock
+	mutex := &sync.Mutex{}
 	c.AddFunc(cfg.Setting.Cron, func() {
 		// lg.Info("cron start!!")
+		mutex.Lock()
+		defer mutex.Unlock()
 		if err := scheduler.SchedulerReady(&cfg, scoreserverClient, vmmsClient, lg); err != nil {
 			fmt.Println(err)
 		}
