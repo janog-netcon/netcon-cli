@@ -20,7 +20,7 @@ func SchedulerReady(cfg *types.SchedulerConfig, ssClient *scoreserver.Client, vm
 	//ScoreServerのデータを取得し集計する
 	pis, zps, abList, err := AggregateInstance(pis, zps, ssClient, lg)
 	if err != nil {
-		lg.Error("Scheduler Aggregate Error: " + err.Error())
+		lg.Error("Scheduler Aggregate: " + err.Error())
 		return err
 	}
 	//Logging ProblemInstanceInfo
@@ -126,7 +126,8 @@ func AggregateInstance(pis map[string]*types.ProblemInstance, zps []*types.ZoneP
 func PISLogging(pis map[string]*types.ProblemInstance, lg *zap.Logger) {
 	for pn, pi := range pis {
 		lg.Info("--------Problem Environments--------")
-		lg.Info("Problem Name, ID: " + pn + ", " + pi.ProblemID)
+		lg.Info("Problem Name: " + pn)
+		lg.Info("Problem ID: " + pi.ProblemID)
 		lg.Info("Ready: " + strconv.Itoa(pi.Ready))
 		lg.Info("NotReady: " + strconv.Itoa(pi.NotReady))
 		lg.Info("UnderChallenge: " + strconv.Itoa(pi.UnderChallenge))
@@ -169,7 +170,7 @@ func SchedulingList(pis map[string]*types.ProblemInstance, lg *zap.Logger) ([]ty
 		//問題のReady+NotReady+Abandoned数がKeepInstanceを超えてはいけない。超えてたら削除対象。
 		//default値以下のinstance数の場合はpoolを消さない
 		for i := 0; pi.Ready+pi.NotReady+pi.Abandoned > pi.KeepPool; i++ {
-			if pi.CurrentInstance <= pi.DefaultInstance {
+			if pi.CurrentInstance <= pi.DefaultInstance || pi.Ready <= i {
 				break
 			}
 			diList = append(diList, types.DeleteInstance{ProblemName: pn, InstanceName: pi.KIS[i].InstanceName, ProjectName: pi.KIS[i].ProjectName, ZoneName: pi.KIS[i].ZoneName})
