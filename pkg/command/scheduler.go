@@ -3,6 +3,7 @@ package command
 import (
 	"fmt"
 	"io/ioutil"
+	"time"
 
 	"github.com/janog-netcon/netcon-cli/pkg/scheduler"
 	"github.com/janog-netcon/netcon-cli/pkg/scoreserver"
@@ -85,6 +86,7 @@ func schedulerStartCommandFunc(cmd *cobra.Command, args []string) error {
 	c.Start()
 
 	for {
+		time.Sleep(time.Second * 10)
 	}
 
 	return nil
