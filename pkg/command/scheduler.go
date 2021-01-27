@@ -27,6 +27,8 @@ func NewSchedulerCommand() *cobra.Command {
 	flags := cmd.PersistentFlags()
 	flags.StringP("config", "", "./netcon.conf", "Scheduler Configuration")
 
+	cmd.MarkFlagRequired("config")
+
 	return cmd
 }
 
@@ -37,9 +39,7 @@ func NewSchedulerStartCommand() *cobra.Command {
 	}
 
 	flags := cmd.Flags()
-	flags.StringP("config", "c", "", "config file path")
-
-	cmd.MarkFlagRequired("config")
+	flags.BoolP("oneshot", "", false, "cronでの繰り返し実行を行わずに1度のみ実行する")
 
 	return cmd
 }
@@ -48,6 +48,10 @@ func schedulerStartCommandFunc(cmd *cobra.Command, args []string) error {
 	flags := cmd.Flags()
 
 	configPath, err := flags.GetString("config")
+	if err != nil {
+		return err
+	}
+	oneshot, err := flags.GetBool("oneshot")
 	if err != nil {
 		return err
 	}
@@ -74,6 +78,15 @@ func schedulerStartCommandFunc(cmd *cobra.Command, args []string) error {
 	// schedulerの起動
 	scoreserverClient := scoreserver.NewClient(cfg.Setting.Scoreserver.Endpoint)
 	vmmsClient := vmms.NewClient(cfg.Setting.Vmms.Endpoint, cfg.Setting.Vmms.Credential)
+
+	// oneshotオプション
+	if oneshot {
+		scheduler.SchedulerReady(&cfg, scoreserverClient, vmmsClient, lg)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
 
 	c := cron.New()
 	c.AddFunc(cfg.Setting.Cron, func() {
