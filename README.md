@@ -66,7 +66,8 @@ netcon vmms instance delete --credential ${CREDENTIAL} --instance-name image-sc0
 
 すべての問題を削除したい場合
 
-!!!ワンライナーで書くと事故の元なので必ず2行に分けましょう!!!
+!!!ワンライナーで書くと事故の元なので必ず2行に分けましょう!!!  
+2行で書いても事故の元な気がしてきたぞ(むしろ2行に分けた方が(ry
 
 ```bash
 PROBLEMS=$(netcon scoreserver instance list | jq -r '.[].name')
