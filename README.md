@@ -80,5 +80,6 @@ gcloudコマンドをインストールする
 
 ```
 $ ssh -L 127.0.0.1:8905:127.0.0.1:8905 netcon
+$ ./scripts/coordinate.sh --dry_run true
 $ ./scripts/coordinate.sh
 ```
