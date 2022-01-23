@@ -45,12 +45,12 @@ def get_instances_from_gcp__gcloud():
 
 # https://cloud.google.com/compute/docs/tutorials/python-guide?hl=ja#listinginstances
 def get_instances_from_gcp(project, zones):
-    compute = googleapiclient.discovery.build('compute', 'v1')
+    compute = googleapiclient.discovery.build("compute", "v1")
 
     instance_names = []
     for zone in zones:
         result = compute.instances().list(project=project, zone=zone).execute()
-        if 'items' in result:
+        if "items" in result:
             for item in result["items"]:
                 instance_names.append(item["name"])
 
@@ -65,10 +65,14 @@ def get_instances_from_vmdb(endpoint):
         return []
 
     if res.status_code != 200:
-        print("[WARNING] vmdb/problem-environments status_code not 200 -> {}".format(res.status_code))
+        print(
+            "[WARNING] vmdb/problem-environments status_code not 200 -> {}".format(
+                res.status_code
+            )
+        )
         raise Exception("status code not 200")
 
-    #instances = json.loads(res.json())
+    # instances = json.loads(res.json())
     instances = res.json()
     print(instances)
 
@@ -100,13 +104,17 @@ def filter_lost_instances(gcp_instances, vmdb_instances):
 
 def delete_lost_instances(vmdb_endpoint, lost_instances):
     for instance_name in lost_instances:
-        url = vmdb_endpoint + '/problem-environments/' + instance_name
+        url = vmdb_endpoint + "/problem-environments/" + instance_name
         try:
             res = requests.delete(url)
         except Exception:
             print("[WARNING] delete_lost_instance: requrests.delete error")
         if res.status_code != 204:
-            print("[WARNING] delete_lost_instance: status code not 204 -> {}: target instance name {}".format(res.status_code, instance_name))
+            print(
+                "[WARNING] delete_lost_instance: status code not 204 -> {}: target instance name {}".format(
+                    res.status_code, instance_name
+                )
+            )
         print("[INFO] vmdb instance deleted: {}".format(instance_name))
 
 
