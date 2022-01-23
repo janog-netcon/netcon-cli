@@ -18,10 +18,12 @@
 
 
 from sys import argv
+import argparse
 import collections
 import json
 import requests
 import subprocess
+
 import googleapiclient.discovery
 
 
@@ -119,10 +121,12 @@ def delete_lost_instances(vmdb_endpoint, lost_instances):
 
 
 def main():
-    try:
-        vmdb_endpoint = argv[1]
-    except IndexError:
-        vmdb_endpoint = "http://localhost:8905"
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dry_run", default=False)
+    parser.add_argument("--vmdb_url", default="http://localhost:8905")
+    args = parser.parse_args()
+
+    vmdb_endpoint = args.vmdb_url
 
     # project = ""
     # zones = ["asia-northeast1-a", "asia-northeast1-b", "asia-northeast1-c"]
@@ -140,7 +144,8 @@ def main():
     print("vmdb instances: {}".format(vmdb_instances))
     print("delete target: {}".format(lost_instances))
 
-    delete_lost_instances(vmdb_endpoint, lost_instances)
+    if not args.dry_run:
+        delete_lost_instances(vmdb_endpoint, lost_instances)
 
 
 if __name__ == "__main__":
