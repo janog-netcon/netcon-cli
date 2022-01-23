@@ -41,10 +41,6 @@ archives:
 dockers:
   - goos: linux
     goarch: amd64
-    binaries:
-      - netcon
-    builds:
-      - build-linux
     dockerfile: ./Dockerfile
     image_templates:
       - "hnron-public.sakuracr.jp/netcon-cli:{{.Version}}"
@@ -55,7 +51,6 @@ dockers:
       - "--label=org.opencontainers.image.title={{.ProjectName}}"
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
       - "--label=org.opencontainers.image.version={{.Version}}"
-    skip_push: true
 
 # publish
 release:
