@@ -161,6 +161,7 @@ def main():
     print("---")
     print("vmdb instances list: {}".format(vmdb_instances))
     print("---")
+    # 削除中のVMなどがgcp_onlyになる
     print("gcp_only exists instances: {}".format(lost_instances["gcp_only"]))
     print("---")
     print(
