@@ -76,7 +76,7 @@ def get_instances_from_vmdb(endpoint):
 
     # instances = json.loads(res.json())
     instances = res.json()
-    print(instances)
+    # print(instances)
 
     instance_names = []
 
@@ -101,7 +101,23 @@ def filter_lost_instances(gcp_instances, vmdb_instances):
         if count == 1:
             filtered_instances.append(instance)
 
-    return filtered_instances
+    # GCPのみに存在しているインスタンス名
+    filtered_gcp_only_instances = []
+    for instance in filtered_instances:
+        if instance in gcp_instances:
+            filtered_gcp_only_instances.append(instance)
+
+    # vmdbのみに存在しているインスタンス名
+    filtered_vmdb_only_instances = []
+    for instance in filtered_instances:
+        if instance in vmdb_instances:
+            filtered_vmdb_only_instances.append(instance)
+
+    return {
+        "all": filtered_instances,
+        "gcp_only": filtered_gcp_only_instances,
+        "vmdb_only": filtered_vmdb_only_instances,
+    }
 
 
 def delete_lost_instances(vmdb_endpoint, lost_instances):
@@ -140,12 +156,22 @@ def main():
 
     lost_instances = filter_lost_instances(gcp_instances, vmdb_instances)
 
-    print("gcp instances: {}".format(gcp_instances))
-    print("vmdb instances: {}".format(vmdb_instances))
-    print("delete target: {}".format(lost_instances))
+    print("======")
+    print("gcp instances list: {}".format(gcp_instances))
+    print("---")
+    print("vmdb instances list: {}".format(vmdb_instances))
+    print("---")
+    print("gcp_only exists instances: {}".format(lost_instances["gcp_only"]))
+    print("---")
+    print(
+        "vmdb_only exists instances (delete target): {}".format(
+            lost_instances["vmdb_only"]
+        )
+    )
+    print("======")
 
     if not args.dry_run:
-        delete_lost_instances(vmdb_endpoint, lost_instances)
+        delete_lost_instances(vmdb_endpoint, lost_instances["vmdb_only"])
 
 
 if __name__ == "__main__":
