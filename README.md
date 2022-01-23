@@ -73,3 +73,12 @@ netcon vmms instance delete --credential ${CREDENTIAL} --instance-name image-sc0
 PROBLEMS=$(netcon scoreserver instance list | jq -r '.[].name')
 echo $PROBLEMS | xargs -n1 ./netcon vmms instance delete --credential ${CREDENTIAL} --project networkcontest --zone asia-northeast1-b --instance-name
 ```
+
+## バグったVM情報をvmdb-apiから削除する
+
+gcloudコマンドをインストールする
+
+```
+$ ssh -L 127.0.0.1:8905:127.0.0.1:8905 netcon
+$ ./scripts/coordinate.sh
+```
