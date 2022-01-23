@@ -82,7 +82,9 @@ func AggregateInstance(pis map[string]*types.ProblemInstance, zps []*types.ZoneP
 
 	for _, p := range *pes {
 		min := strings.Split(*p.MachineImageName, "-")
-		pn := min[len(min)-1]
+		// image-nao-abcde #naoが問題コード
+		// ["image", "nao", "abcde"] にsplitして問題コードを取得している
+		pn := min[1]
 		if _, ok := pis[pn]; !ok {
 			lg.Error("Scheduler: Aggregate. This problem name not exists. The value is " + pn)
 			continue
