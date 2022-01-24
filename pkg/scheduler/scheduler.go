@@ -53,8 +53,7 @@ func SchedulerReady(cfg *types.SchedulerConfig, ssClient *scoreserver.Client, vm
 
 func InitSchedulerInfo(cfg *types.SchedulerConfig, lg *zap.Logger) (map[string]*types.ProblemInstance, []*types.ZonePriority) {
 	lg.Info("Scheduler: InitSchedulerInfo")
-	var pis map[string]*types.ProblemInstance
-	pis = map[string]*types.ProblemInstance{}
+	pis := map[string]*types.ProblemInstance{}
 	//Init pis
 	for _, p := range cfg.Setting.Problems {
 		pis[p.Name] = &types.ProblemInstance{MachineImageName: "", ProblemID: "", NotReady: 0, Ready: 0, UnderChallenge: 0, UnderScoring: 0, Abandoned: 0, KeepPool: p.KeepPool, KIS: []types.KeepInstance{}, CurrentInstance: 0, DefaultInstance: p.DefaultInstance}
@@ -92,25 +91,28 @@ func AggregateInstance(pis map[string]*types.ProblemInstance, zps []*types.ZoneP
 		pis[pn].MachineImageName = *p.MachineImageName
 		pis[pn].ProblemID = p.ProblemID
 		if p.InnerStatus == nil {
-			pis[pn].Ready = pis[pn].Ready + 1
+			pis[pn].Ready++
 			pis[pn].KIS = append(pis[pn].KIS, types.KeepInstance{InstanceName: p.Name, ProjectName: p.ProjectName, ZoneName: p.ZoneName, CreatedAt: p.CreatedAt})
 		} else {
 			switch *p.InnerStatus {
-			case "NOT_READY":
-				pis[pn].NotReady = pis[pn].NotReady + 1
-			case "READY":
-				pis[pn].Ready = pis[pn].Ready + 1
+			case types.ProblemEnvironmentInnerStatusNotReady:
+				pis[pn].NotReady++
+			case types.ProblemEnvironmentInnerStatusReady:
+				pis[pn].Ready++
 				pis[pn].KIS = append(pis[pn].KIS, types.KeepInstance{InstanceName: p.Name, ProjectName: p.ProjectName, ZoneName: p.ZoneName, CreatedAt: p.CreatedAt})
-			case "UNDER_CHALLENGE":
-				pis[pn].UnderChallenge = pis[pn].UnderChallenge + 1
-			case "UNDER_SCORING":
-				pis[pn].UnderScoring = pis[pn].UnderScoring + 1
-			case "ABANDONED":
-				pis[pn].Abandoned = pis[pn].Abandoned + 1
+			case types.ProblemEnvironmentInnerStatusStaging:
+				pis[pn].Staging++
+				pis[pn].KIS = append(pis[pn].KIS, types.KeepInstance{InstanceName: p.Name, ProjectName: p.ProjectName, ZoneName: p.ZoneName, CreatedAt: p.CreatedAt})
+			case types.ProblemEnvironmentInnerStatusUnderChallenge:
+				pis[pn].UnderChallenge++
+			case types.ProblemEnvironmentInnerStatusUnderScoring:
+				pis[pn].UnderScoring++
+			case types.ProblemEnvironmentInnerStatusAbandoned:
+				pis[pn].Abandoned++
 				//ABANDONEDを消す
 				abList = append(abList, types.DeleteInstance{ProblemName: pn, InstanceName: p.Name, ProjectName: p.ProjectName, ZoneName: p.ZoneName})
 			case "":
-				pis[pn].Ready = pis[pn].Ready + 1
+				pis[pn].Ready++
 				pis[pn].KIS = append(pis[pn].KIS, types.KeepInstance{InstanceName: p.Name, ProjectName: p.ProjectName, ZoneName: p.ZoneName, CreatedAt: p.CreatedAt})
 			}
 		}
@@ -163,8 +165,8 @@ func SchedulingList(pis map[string]*types.ProblemInstance, lg *zap.Logger) ([]ty
 	for pn, pi := range pis {
 		//削除するInstanceは新しく出来たものから。
 		sort.Sort(KIS(pi.KIS))
-		//問題のReady+NotReady+Abandoned数がKeepInstanceを超えてはいけない。超えてたら削除対象。
-		for i := 0; pi.Ready+pi.NotReady+pi.Abandoned > pi.KeepPool; i++ {
+		//問題のReady+NotReady+Staging+Abandoned数がKeepInstanceを超えてはいけない。超えてたら削除対象。
+		for i := 0; pi.Ready+pi.NotReady+pi.Staging+pi.Abandoned > pi.KeepPool; i++ {
 			//default値以下のinstance数の場合はpoolを消さない. 消すReadyがなければ終了.
 			if pi.CurrentInstance <= pi.DefaultInstance || pi.Ready <= i {
 				break
@@ -173,8 +175,8 @@ func SchedulingList(pis map[string]*types.ProblemInstance, lg *zap.Logger) ([]ty
 			pi.Ready--
 			pi.CurrentInstance--
 		}
-		//問題のReady+NotReady+Abandoned数がKeepPoolより少ない場合は作成対象にする
-		for i := 0; pi.Ready+pi.NotReady+pi.Abandoned < pi.KeepPool; i++ {
+		//問題のReady+NotReady+Staging+Abandoned数がKeepPoolより少ない場合は作成対象にする
+		for i := 0; pi.Ready+pi.NotReady+pi.Staging+pi.Abandoned < pi.KeepPool; i++ {
 			ciList = append(ciList, types.CreateInstance{ProblemName: pn, ProblemID: pi.ProblemID, MachineImageName: pi.MachineImageName})
 			pi.NotReady++
 		}

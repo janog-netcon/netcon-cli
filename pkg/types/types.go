@@ -65,6 +65,8 @@ const (
 	ProblemEnvironmentInnerStatusNotReady = "NOT_READY"
 	// ProblemEnvironmentInnerStatusReady プール中
 	ProblemEnvironmentInnerStatusReady = "READY"
+	// ProblemEnvironmentInnerStatusStaging 準備中
+	ProblemEnvironmentInnerStatusStaging = "STAGING"
 	// ProblemEnvironmentInnerStatusUnderChallenge ユーザが解答中
 	ProblemEnvironmentInnerStatusUnderChallenge = "UNDER_CHALLENGE"
 	// ProblemEnvironmentInnerStatusUnderScoring 採点中
@@ -136,6 +138,7 @@ type ProblemInstance struct {
 	ProblemID        string
 	NotReady         int
 	Ready            int
+	Staging          int
 	UnderChallenge   int
 	UnderScoring     int
 	Abandoned        int
