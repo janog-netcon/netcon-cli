@@ -56,7 +56,7 @@ func InitSchedulerInfo(cfg *types.SchedulerConfig, lg *zap.Logger) (map[string]*
 	pis := map[string]*types.ProblemInstance{}
 	//Init pis
 	for _, p := range cfg.Setting.Problems {
-		pis[p.Name] = &types.ProblemInstance{MachineImageName: "", ProblemID: "", NotReady: 0, Ready: 0, UnderChallenge: 0, UnderScoring: 0, Abandoned: 0, KeepPool: p.KeepPool, KIS: []types.KeepInstance{}, CurrentInstance: 0, DefaultInstance: p.DefaultInstance}
+		pis[p.Name] = &types.ProblemInstance{MachineImageName: "", ProblemID: "", NotReady: 0, Ready: 0, Staging: 0, UnderChallenge: 0, UnderScoring: 0, Abandoned: 0, KeepPool: p.KeepPool, KIS: []types.KeepInstance{}, CurrentInstance: 0, DefaultInstance: p.DefaultInstance}
 	}
 	var zps []*types.ZonePriority
 	//Init zps
@@ -134,6 +134,7 @@ func PISLogging(pis map[string]*types.ProblemInstance, lg *zap.Logger) {
 		lg.Info("Problem ID: " + pi.ProblemID)
 		lg.Info("Ready: " + strconv.Itoa(pi.Ready))
 		lg.Info("NotReady: " + strconv.Itoa(pi.NotReady))
+		lg.Info("Staging: " + strconv.Itoa(pi.Staging))
 		lg.Info("UnderChallenge: " + strconv.Itoa(pi.UnderChallenge))
 		lg.Info("UnderScoring: " + strconv.Itoa(pi.UnderScoring))
 		lg.Info("Abandoned: " + strconv.Itoa(pi.Abandoned))
