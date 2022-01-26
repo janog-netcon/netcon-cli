@@ -11,10 +11,61 @@ import (
 	"github.com/janog-netcon/netcon-cli/pkg/scoreserver"
 	"github.com/janog-netcon/netcon-cli/pkg/types"
 	"github.com/janog-netcon/netcon-cli/pkg/vmms"
+	"github.com/prometheus/client_golang/prometheus"
 )
+
+type ProblemGauges map[string]map[string]prometheus.Gauge
+
+/*
+{
+  "problem_code": {
+    "Ready": prometheus.Gauge,
+    "NotReady": prometheus.Gauge,
+    "UnderChallenge": prometheus.Gauge,
+    "UnderScoring": prometheus.Gauge,
+    "Abandoned": prometheus.Gauge,
+  },
+  "": []
+}
+*/
+func GenerateProblemGauges(problemCodes []string) ProblemGauges {
+	statuses := []string{
+		types.ProblemEnvironmentInnerStatusReady,
+		types.ProblemEnvironmentInnerStatusNotReady,
+		types.ProblemEnvironmentInnerStatusUnderChallenge,
+		types.ProblemEnvironmentInnerStatusUnderScoring,
+		types.ProblemEnvironmentInnerStatusAbandoned,
+		"CurrentInstance",
+	}
+
+	var gauges ProblemGauges
+
+	for _, name := range problemCodes {
+		for _, status := range statuses {
+			g := prometheus.NewGauge(prometheus.GaugeOpts{
+				Name: "problem_vm_status",
+				ConstLabels: map[string]string{
+					"problem_code": name,
+					"status":       status,
+				},
+			})
+			prometheus.MustRegister(g)
+			gauges[name][status] = g
+		}
+	}
+
+	return gauges
+}
 
 func SchedulerReady(cfg *types.SchedulerConfig, ssClient *scoreserver.Client, vmmsClient *vmms.Client, lg *zap.Logger) error {
 	lg.Info("Scheduler: SchedulerReady")
+
+	problemCodes := []string{}
+	for _, p := range cfg.Setting.Problems {
+		problemCodes = append(problemCodes, p.Name)
+	}
+	problemGauges := GenerateProblemGauges(problemCodes)
+
 	//SchedulerConfigをSchedulerInfoにまとめ,ZonePriotyを作る
 	pis, zps := InitSchedulerInfo(cfg, lg)
 	//ScoreServerのデータを取得し集計する
@@ -26,6 +77,8 @@ func SchedulerReady(cfg *types.SchedulerConfig, ssClient *scoreserver.Client, vm
 	//Logging ProblemInstanceInfo
 	PISLogging(pis, lg)
 	ZPSLogging(zps, lg)
+	//Metrics ProblemInstanceInfo
+	PISMetrics(pis, problemGauges, lg)
 	//ConfigよりInstanceの作成リストを削除リストを作る
 	ciList, diList := SchedulingList(pis, lg)
 
@@ -135,6 +188,17 @@ func PISLogging(pis map[string]*types.ProblemInstance, lg *zap.Logger) {
 		lg.Info("UnderScoring: " + strconv.Itoa(pi.UnderScoring))
 		lg.Info("Abandoned: " + strconv.Itoa(pi.Abandoned))
 		lg.Info("CurrentInstance: " + strconv.Itoa(pi.CurrentInstance))
+	}
+}
+
+func PISMetrics(pis map[string]*types.ProblemInstance, problemGauges ProblemGauges, lg *zap.Logger) {
+	for pn, pi := range pis {
+		problemGauges[pn][types.ProblemEnvironmentInnerStatusReady].Set(float64(pi.Ready))
+		problemGauges[pn][types.ProblemEnvironmentInnerStatusNotReady].Set(float64(pi.NotReady))
+		problemGauges[pn][types.ProblemEnvironmentInnerStatusUnderChallenge].Set(float64(pi.UnderChallenge))
+		problemGauges[pn][types.ProblemEnvironmentInnerStatusUnderScoring].Set(float64(pi.UnderScoring))
+		problemGauges[pn][types.ProblemEnvironmentInnerStatusAbandoned].Set(float64(pi.Abandoned))
+		problemGauges[pn]["CurrentInstance"].Set(float64(pi.CurrentInstance))
 	}
 }
 

@@ -46,6 +46,7 @@ func NewSchedulerStartCommand() *cobra.Command {
 	flags := cmd.Flags()
 	flags.BoolP("oneshot", "", false, "cronでの繰り返し実行を行わずに1度のみ実行する")
 	flags.StringP("log-file-path", "", "./scheduler.log", "Scheduler logfile")
+	flags.BoolP("enable-metrics", "", false, "open metrics")
 
 	return cmd
 }
