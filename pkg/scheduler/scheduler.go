@@ -53,8 +53,7 @@ func SchedulerReady(cfg *types.SchedulerConfig, ssClient *scoreserver.Client, vm
 
 func InitSchedulerInfo(cfg *types.SchedulerConfig, lg *zap.Logger) (map[string]*types.ProblemInstance, []*types.ZonePriority) {
 	lg.Info("Scheduler: InitSchedulerInfo")
-	var pis map[string]*types.ProblemInstance
-	pis = map[string]*types.ProblemInstance{}
+	pis := map[string]*types.ProblemInstance{}
 	//Init pis
 	for _, p := range cfg.Setting.Problems {
 		pis[p.Name] = &types.ProblemInstance{MachineImageName: "", ProblemID: "", NotReady: 0, Ready: 0, UnderChallenge: 0, UnderScoring: 0, Abandoned: 0, KeepPool: p.KeepPool, KIS: []types.KeepInstance{}, CurrentInstance: 0, DefaultInstance: p.DefaultInstance}
@@ -194,7 +193,7 @@ func DeleteScheduler(dis []types.DeleteInstance, vmmsClient *vmms.Client, lg *za
 			for _, v := range dis[i:] {
 				msg = msg + v.ProblemName + ": " + v.InstanceName + ", "
 			}
-			return fmt.Errorf("Scheduler: DelteScheduler. %w Remains on the CreateInstanceList. %s", err, msg)
+			return fmt.Errorf("scheduler: delete scheduler. %w remains on the create_instance_list. %s", err, msg)
 		}
 		lg.Info("DeletedInstance: " + d.ProblemName + " " + d.InstanceName)
 	}
@@ -238,7 +237,7 @@ func CreateScheduler(cis []types.CreateInstance, zps []*types.ZonePriority, vmms
 		for _, v := range cis[i:] {
 			msg = msg + v.ProblemName + ", "
 		}
-		return fmt.Errorf("Scheduler: CreateScheduler. Remains on the CreateInstanceList. %s", msg)
+		return fmt.Errorf("scheduler: create scheduler. remains on the create_instance_list. %s", msg)
 	}
 	return nil
 }
