@@ -3,6 +3,7 @@ package command
 import (
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"sync"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/janog-netcon/netcon-cli/pkg/scoreserver"
 	"github.com/janog-netcon/netcon-cli/pkg/types"
 	"github.com/janog-netcon/netcon-cli/pkg/vmms"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/robfig/cron/v3"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -44,6 +46,7 @@ func NewSchedulerStartCommand() *cobra.Command {
 	flags := cmd.Flags()
 	flags.BoolP("oneshot", "", false, "cronでの繰り返し実行を行わずに1度のみ実行する")
 	flags.StringP("log-file-path", "", "./scheduler.log", "Scheduler logfile")
+	flags.BoolP("enable-metrics", "", false, "open metrics")
 
 	return cmd
 }
@@ -60,6 +63,10 @@ func schedulerStartCommandFunc(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	logFilePath, err := flags.GetString("log-file-path")
+	if err != nil {
+		return err
+	}
+	enableMetrics, err := flags.GetBool("enable-metrics")
 	if err != nil {
 		return err
 	}
@@ -113,8 +120,13 @@ func schedulerStartCommandFunc(cmd *cobra.Command, args []string) error {
 	})
 	c.Start()
 
-	for {
-		time.Sleep(time.Second * 10)
+	if enableMetrics {
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(":8080", nil)
+	} else {
+		for {
+			time.Sleep(time.Second * 10)
+		}
 	}
 
 	return nil
