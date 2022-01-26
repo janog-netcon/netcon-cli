@@ -38,7 +38,7 @@ func GenerateProblemGauges(problemCodes []string) ProblemGauges {
 		"CurrentInstance",
 	}
 
-	var gauges ProblemGauges
+	gauges := ProblemGauges{}
 
 	for _, name := range problemCodes {
 		for _, status := range statuses {
