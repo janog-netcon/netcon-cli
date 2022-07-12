@@ -326,7 +326,7 @@ func SchedulingList(problems map[string]*Problem, lg *zap.Logger) ([]CreationTar
 		validInstanceCount := problem.Ready + problem.NotReady
 
 		// Ready + NotReady なインスタンスが KeepPool を超えていたらインスタンスの削除を行う
-		for i := 0; validInstanceCount > problem.KeepPool; i++ {
+		for i := 0; validInstanceCount > problem.KeepPool && len(filteredKeepInstances) > i; i++ {
 			deletionTargetInstances = append(deletionTargetInstances, DeletionTargetInstance{
 				ProblemName:  key,
 				InstanceName: filteredKeepInstances[i].InstanceName,
