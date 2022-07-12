@@ -225,6 +225,8 @@ func AggregateInstance(problems map[string]*Problem, zonePriorities []*ZonePrior
 					ZoneName:     p.ZoneName,
 				})
 			case "":
+				// スコアサーバがまだ触れていないインスタンスのInnerStatusにはnil(デフォルト)が設定されている
+				// そのため、scheduler的には InnerStatus に nil が設定されているインスタンスはReady扱いになる
 				problems[*p.MachineImageName].Ready++
 				problems[*p.MachineImageName].KeptInstances = append(problems[*p.MachineImageName].KeptInstances, Instance{
 					InstanceName: p.Name,
@@ -280,20 +282,14 @@ func (a KeptInstances) Len() int           { return len(a) }
 func (a KeptInstances) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a KeptInstances) Less(i, j int) bool { return a[j].CreatedAt.Before(a[i].CreatedAt) }
 
-func filterInstanceByStatus(statuses []string, instances []Instance) []Instance {
+// statusが Ready, NotReady, nil なインスタンスでfilterして返す
+func filterInstances(instances []Instance) []Instance {
 	filteredInstances := []Instance{}
 
-	contains := func(statuses []string, innerStatus string) bool {
-		for _, s := range statuses {
-			if innerStatus == s {
-				return true
-			}
-		}
-		return false
-	}
-
 	for _, instance := range instances {
-		if instance.InnerStatus != nil && contains(statuses, *instance.InnerStatus) {
+		if instance.InnerStatus == nil ||
+			*instance.InnerStatus == types.ProblemEnvironmentInnerStatusReady ||
+			*instance.InnerStatus == types.ProblemEnvironmentInnerStatusNotReady {
 			filteredInstances = append(filteredInstances, instance)
 		}
 	}
@@ -307,6 +303,7 @@ func filterInstanceByStatus(statuses []string, instances []Instance) []Instance 
 //
 // 処理について
 // 「Ready, NotReady」なインスタンスが KeepInstance を超えていたらインスタンスを削除する
+// ただし、このReadyは InnerStatus が nil なインスタンス(まだスコアサーバから使用されていないインスタンス) も含んでいる
 func SchedulingList(problems map[string]*Problem, lg *zap.Logger) ([]CreationTargetInstance, []DeletionTargetInstance) {
 	lg.Info("Scheduler: SchedulingList")
 
@@ -317,10 +314,7 @@ func SchedulingList(problems map[string]*Problem, lg *zap.Logger) ([]CreationTar
 		// 新しく作成されたインスタンスから削除対象にするために作成日時でソートする
 		sort.Sort(KeptInstances(problem.KeptInstances))
 		// 問題に挑戦中のVMが削除されないようにReadyとNotReadyでfilterする
-		filteredKeepInstances := filterInstanceByStatus([]string{
-			types.ProblemEnvironmentInnerStatusReady,
-			types.ProblemEnvironmentInnerStatusNotReady,
-		}, problem.KeptInstances)
+		filteredKeepInstances := filterInstances(problem.KeptInstances)
 
 		// Ready と NotReady なインスタンスを保持したいインスタンスとしてカウントする
 		validInstanceCount := problem.Ready + problem.NotReady
