@@ -71,6 +71,9 @@ func (c *Client) CreateInstance(problemID, machineImageName, project, zone strin
 	if err != nil {
 		return nil, err
 	}
+	// https://stackoverflow.com/questions/17714494/golang-http-request-results-in-eof-errors-when-making-multiple-requests-successi
+	// これが無いとエラーになる `Failed to CreateInstance. Post "http://vm-management-service:81/instance": EOF``
+	req.Close = true
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.Credential))
 	req.Header.Set("Content-Type", "application/json")
 
@@ -131,6 +134,9 @@ func (c *Client) DeleteInstance(name, project, zone string) error {
 	if err != nil {
 		return err
 	}
+	// https://stackoverflow.com/questions/17714494/golang-http-request-results-in-eof-errors-when-making-multiple-requests-successi
+	// これが無いとエラーになる `Failed to CreateInstance. Post "http://vm-management-service:81/instance": EOF``
+	req.Close = true
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.Credential))
 	req.Header.Set("Content-Type", "application/json")
 
