@@ -19,24 +19,27 @@ setting:
         - name: asia-northeast2
           max_instance: 30
   problems:
-    - name: aki
+    - machine_image_name: image-aki
       keep_pool: 10
-      default_instance: 3
-    - name: kit
+      problem_id: 89bc780e-7a54-4015-8327-125564a7da50
+    - machine_image_name: image-aki
       keep_pool: 10
-      default_instance: 3
-    - name: kny
+      problem_id: 89bc780e-7a54-4015-8327-125564a7da50
+    - machine_image_name: image-kit
       keep_pool: 10
-      default_instance: 3
-    - name: nas
+      problem_id: d14ccfff-6410-4aea-a31d-d323f8050214
+    - machine_image_name: image-kny
       keep_pool: 10
-      default_instance: 3
-    - name: pea
+      problem_id: 6b0b1605-9021-4848-a4ab-246f22ffcb61
+    - machine_image_name: image-nas
       keep_pool: 10
-      default_instance: 3
-    - name: sc0
+      problem_id: 8b8082f6-d7df-4555-ae25-feb07f857987
+    - machine_image_name: image-pea
       keep_pool: 10
-      default_instance: 3
-    - name: sc1
+      problem_id: 968fd81d-d511-4ab5-84db-13fc756f3d7c
+    - machine_image_name: image-sc0
       keep_pool: 10
-      default_instance: 3
+      problem_id: 227803fb-2fe1-4b89-a805-79e7679bf030
+    - machine_image_name: image-sc1
+      keep_pool: 10
+      problem_id: 561d9876-7568-4096-b164-126cba6e4eb7
