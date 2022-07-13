@@ -185,7 +185,7 @@ def main():
     parser.add_argument("--project_id", type=str, help="auth_type=saの時のみ")
     parser.add_argument("--zones", nargs="+", type=str, help="auth_type=saの時のみ")
     parser.add_argument("--loop", default=False, help="指定した秒数でループ実行を行う")
-    parser.add_argument("--loop_interval", default=30, help="指定した秒数でループ実行を行う")
+    parser.add_argument("--loop_interval", default=30, type=int, help="指定した秒数でループ実行を行う")
     args = parser.parse_args()
 
     if args.loop:
