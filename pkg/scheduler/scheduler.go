@@ -358,8 +358,9 @@ func DeleteInstances(instances []DeletionTargetInstance, vmmsClient *vmms.Client
 			for _, v := range instances[i:] {
 				msg = msg + v.InstanceName + ", "
 			}
-			// FIXME: VM不整合が起きて404エラーになったときに処理が止まってしまう
-			return fmt.Errorf("scheduler: delete scheduler. %w remains on the delete_instance_list. %s", err, msg)
+			// FIXME: VM不整合が起きた時に404エラーになって処理が止まってしまうのでログを出力するだけにしている
+			// return fmt.Errorf("scheduler: delete scheduler. %w remains on the delete_instance_list. %s", err, msg)
+			lg.Error(fmt.Sprintf("scheduler: delete scheduler. %s remains on the delete_instance_list. %s", err.Error(), msg))
 		}
 		lg.Info("DeletedInstance: " + instance.ProblemName + " " + instance.InstanceName)
 	}
