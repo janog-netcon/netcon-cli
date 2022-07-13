@@ -387,6 +387,9 @@ func CreateInstances(instances []CreationTargetInstance, zonePriorities []*ZoneP
 
 		for creatableInstanceCount > 0 && len(instances) > i {
 
+			// 1秒待たないとEOFエラーになる `Post "http://vm-management-service:81/instance": EOF`
+			time.Sleep(1 * time.Second)
+
 			newInstance, err := vmmsClient.CreateInstance(
 				instances[i].ProblemID,
 				instances[i].MachineImageName,
