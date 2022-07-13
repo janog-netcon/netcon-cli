@@ -349,11 +349,16 @@ func DeleteInstances(instances []DeletionTargetInstance, vmmsClient *vmms.Client
 	lg.Info("Scheduler: DeleteScheduler")
 
 	for i, instance := range instances {
+
+		// 1秒待たないとEOFエラーになる `Post "http://vm-management-service:81/instance": EOF`
+		time.Sleep(1 * time.Second)
+
 		if err := vmmsClient.DeleteInstance(instance.InstanceName, instance.ProjectName, instance.ZoneName); err != nil {
 			msg := ""
 			for _, v := range instances[i:] {
 				msg = msg + v.InstanceName + ", "
 			}
+			// FIXME: VM不整合が起きて404エラーになったときに処理が止まってしまう
 			return fmt.Errorf("scheduler: delete scheduler. %w remains on the delete_instance_list. %s", err, msg)
 		}
 		lg.Info("DeletedInstance: " + instance.ProblemName + " " + instance.InstanceName)
