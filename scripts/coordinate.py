@@ -24,6 +24,7 @@ import argparse
 import collections
 import json
 import subprocess
+import time
 
 import requests
 from google.cloud import compute_v1
@@ -141,15 +142,7 @@ def delete_lost_instances(vmdb_endpoint, lost_instances):
         print("[INFO] vmdb instance deleted: {}".format(instance_name))
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--dry_run", default=False)
-    parser.add_argument("--vmdb_url", default="http://localhost:8905")
-    parser.add_argument("--auth_type", choices=["sa", "gcloud"], default="gcloud")
-    parser.add_argument("--project_id", type=str, help="auth_type=saの時のみ")
-    parser.add_argument("--zones", nargs="+", type=str, help="auth_type=saの時のみ")
-    args = parser.parse_args()
-
+def coordinate(args):
     vmdb_endpoint = args.vmdb_url
 
     # gcp_instances = ["image-aoi-1"]
@@ -182,6 +175,25 @@ def main():
 
     if not args.dry_run:
         delete_lost_instances(vmdb_endpoint, lost_instances["vmdb_only"])
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dry_run", default=False)
+    parser.add_argument("--vmdb_url", default="http://localhost:8905")
+    parser.add_argument("--auth_type", choices=["sa", "gcloud"], default="gcloud")
+    parser.add_argument("--project_id", type=str, help="auth_type=saの時のみ")
+    parser.add_argument("--zones", nargs="+", type=str, help="auth_type=saの時のみ")
+    parser.add_argument("--loop", default=False, help="指定した秒数でループ実行を行う")
+    parser.add_argument("--loop_interval", default=30, help="指定した秒数でループ実行を行う")
+    args = parser.parse_args()
+
+    if args.loop:
+        while True:
+            coordinate(args)
+            time.sleep(args.loop_interval)
+    else:
+        coordinate(args)
 
 
 if __name__ == "__main__":
