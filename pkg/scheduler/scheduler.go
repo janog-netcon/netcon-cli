@@ -77,21 +77,21 @@ func SchedulerReady(cfg *types.SchedulerConfig, ssClient *scoreserver.Client, vm
 	creationTargetInstances, deletionTargetInstances := SchedulingList(problems, lg)
 
 	// abandoned なインスタンスを削除する
-	err = DeleteInstances(abandonedInstances, vmmsClient, lg)
+	err = DeleteInstances(abandonedInstances, vmmsClient, cfg.Setting.Scheduler.InstanceDeletionInterval, lg)
 	if err != nil {
 		lg.Error("Scheduler DeleteScheduler: AbandonedInstance. " + err.Error())
 		return err
 	}
 
 	// 削除対象のインスタンスを削除する
-	err = DeleteInstances(deletionTargetInstances, vmmsClient, lg)
+	err = DeleteInstances(deletionTargetInstances, vmmsClient, cfg.Setting.Scheduler.InstanceDeletionInterval, lg)
 	if err != nil {
 		lg.Error("Scheduler DeleteScheduler: " + err.Error())
 		return err
 	}
 
 	// 作成対象のインスタンスを作成する
-	err = CreateInstances(creationTargetInstances, zonePriorities, vmmsClient, lg)
+	err = CreateInstances(creationTargetInstances, zonePriorities, vmmsClient, cfg.Setting.Scheduler.InstanceCreationInterval, lg)
 	if err != nil {
 		lg.Error("Scheduler CreateScheduler: " + err.Error())
 		return err
@@ -345,13 +345,13 @@ func SchedulingList(problems map[string]*Problem, lg *zap.Logger) ([]CreationTar
 }
 
 // DeleteInstances 削除対象のinstanceを全て削除する
-func DeleteInstances(instances []DeletionTargetInstance, vmmsClient *vmms.Client, lg *zap.Logger) error {
+func DeleteInstances(instances []DeletionTargetInstance, vmmsClient *vmms.Client, interval int, lg *zap.Logger) error {
 	lg.Info("Scheduler: DeleteScheduler")
 
 	for i, instance := range instances {
 
 		// 1秒待たないとEOFエラーになる `Post "http://vm-management-service:81/instance": EOF`
-		time.Sleep(1 * time.Second)
+		time.Sleep(time.Duration(interval) * time.Second)
 
 		if err := vmmsClient.DeleteInstance(instance.InstanceName, instance.ProjectName, instance.ZoneName); err != nil {
 			msg := ""
@@ -376,7 +376,7 @@ func (a ZonePriorities) Less(i, j int) bool { return a[i].Priority < a[j].Priori
 
 // CreateInstance 作成対象のinstanceを作成する
 // 作成時はZonePriorityを参照し、Zoneの優先順に作成していく
-func CreateInstances(instances []CreationTargetInstance, zonePriorities []*ZonePriority, vmmsClient *vmms.Client, lg *zap.Logger) error {
+func CreateInstances(instances []CreationTargetInstance, zonePriorities []*ZonePriority, vmmsClient *vmms.Client, interval int, lg *zap.Logger) error {
 	lg.Info("Scheduler: CreateScheduler")
 
 	// Zoneを優先順に並び替える
@@ -394,7 +394,7 @@ func CreateInstances(instances []CreationTargetInstance, zonePriorities []*ZoneP
 		for creatableInstanceCount > 0 && len(instances) > i {
 
 			// 1秒待たないとEOFエラーになる `Post "http://vm-management-service:81/instance": EOF`
-			time.Sleep(1 * time.Second)
+			time.Sleep(time.Duration(interval) * time.Second)
 
 			newInstance, err := vmmsClient.CreateInstance(
 				instances[i].ProblemID,

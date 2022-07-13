@@ -5,6 +5,10 @@ setting:
     endpoint: http://127.0.0.1:8950
     credential: ""
   cron: "@every 2s"
+  scheduler:
+    # 1秒待たないとEOFエラーになる `Post "http://vm-management-service:81/instance": EOF`
+    instance_creation_interval: 1
+    instance_deletion_interval: 1
   projects:
     - name: networkcontest
       zones:

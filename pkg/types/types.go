@@ -113,7 +113,11 @@ type SchedulerConfig struct {
 			Endpoint   string `yaml:"endpoint"`
 			Credential string `yaml:"credential"`
 		} `yaml:"vmms"`
-		Cron     string `yaml:"cron"`
+		Cron      string `yaml:"cron"`
+		Scheduler struct {
+			InstanceCreationInterval int `yaml:"instance_creation_interval"`
+			InstanceDeletionInterval int `yaml:"instance_deletion_interval"`
+		} `yaml:"scheduler"`
 		Projects []struct {
 			Name  string `yaml:"name"`
 			Zones []struct {
