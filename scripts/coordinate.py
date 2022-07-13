@@ -14,17 +14,19 @@
   - ただし、問題に対するインスタンス数のquotaに引っかかってしまい、
     ユーザに割り当てられる問題VMが足りなくなってしまう
 - スコアサーバ経由でdeleteするのではなく、DBをいじってレコードを消していた？
+---
+対応状況
+- プロジェクトは1プロジェクトのみの対応になる
 """
 
 
-from sys import argv
 import argparse
 import collections
 import json
-import requests
 import subprocess
 
-import googleapiclient.discovery
+import requests
+from google.cloud import compute_v1
 
 
 def run_cmd(args):
@@ -45,16 +47,19 @@ def get_instances_from_gcp__gcloud():
     return instance_names
 
 
-# https://cloud.google.com/compute/docs/tutorials/python-guide?hl=ja#listinginstances
-def get_instances_from_gcp(project, zones):
-    compute = googleapiclient.discovery.build("compute", "v1")
+# https://cloud.google.com/compute/docs/api/libraries?hl=ja
+def get_instances_from_gcp(project_id, zones):
+    client = compute_v1.InstancesClient()
 
     instance_names = []
+
     for zone in zones:
-        result = compute.instances().list(project=project, zone=zone).execute()
-        if "items" in result:
-            for item in result["items"]:
-                instance_names.append(item["name"])
+        instances = client.list(project=project_id, zone=zone)
+
+        for instance in instances:
+            instance_names.append(instance.name)
+
+    return instance_names
 
 
 def get_instances_from_vmdb(endpoint):
@@ -140,19 +145,23 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry_run", default=False)
     parser.add_argument("--vmdb_url", default="http://localhost:8905")
+    parser.add_argument("--auth_type", choices=["sa", "gcloud"], default="gcloud")
+    parser.add_argument("--project_id", type=str, help="auth_type=saの時のみ")
+    parser.add_argument("--zones", nargs="+", type=str, help="auth_type=saの時のみ")
     args = parser.parse_args()
 
     vmdb_endpoint = args.vmdb_url
 
-    # project = ""
-    # zones = ["asia-northeast1-a", "asia-northeast1-b", "asia-northeast1-c"]
-
-    gcp_instances = get_instances_from_gcp__gcloud()
-    # gcp_instances = get_instances_from_gcp(project, zones)
     # gcp_instances = ["image-aoi-1"]
+    if args.auth_type == "gcloud":
+        gcp_instances = get_instances_from_gcp__gcloud()
+    else:
+        print("project_id: " + args.project_id)
+        print("zones: " + str(args.zones))
+        gcp_instances = get_instances_from_gcp(args.project_id, args.zones)
 
-    vmdb_instances = get_instances_from_vmdb(vmdb_endpoint)
     # vmdb_instances = ["image-aoi-1", "image-nao-1"]
+    vmdb_instances = get_instances_from_vmdb(vmdb_endpoint)
 
     lost_instances = filter_lost_instances(gcp_instances, vmdb_instances)
 
