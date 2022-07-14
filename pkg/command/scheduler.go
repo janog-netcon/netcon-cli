@@ -1,6 +1,7 @@
 package command
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -25,6 +26,7 @@ func NewSchedulerCommand() *cobra.Command {
 
 	cmd.AddCommand(
 		NewSchedulerStartCommand(),
+		NewSchedulerDumpCommand(),
 	)
 
 	flags := cmd.PersistentFlags()
@@ -116,6 +118,69 @@ func schedulerStartCommandFunc(cmd *cobra.Command, args []string) error {
 	for {
 		time.Sleep(time.Second * 10)
 	}
+
+	return nil
+}
+
+func NewSchedulerDumpCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:  "dump",
+		RunE: schedulerDumpCommandFunc,
+	}
+
+	flags := cmd.Flags()
+	flags.StringP("log-file-path", "", "./scheduler.log", "Scheduler logfile")
+
+	return cmd
+}
+
+func schedulerDumpCommandFunc(cmd *cobra.Command, args []string) error {
+	flags := cmd.Flags()
+
+	configPath, err := flags.GetString("config")
+	if err != nil {
+		return err
+	}
+	logFilePath, err := flags.GetString("log-file-path")
+	if err != nil {
+		return err
+	}
+
+	lg := newLogger(logFilePath)
+
+	// read mapping file
+	bytes, err := ioutil.ReadFile(configPath)
+	if err != nil {
+		return err
+	}
+
+	cfg := types.SchedulerConfig{}
+	if err := yaml.Unmarshal(bytes, &cfg); err != nil {
+		return err
+	}
+
+	// schedulerの起動
+	scoreserverClient := scoreserver.NewClient(cfg.Setting.Scoreserver.Endpoint)
+	vmmsClient := vmms.NewClient(cfg.Setting.Vmms.Endpoint, cfg.Setting.Vmms.Credential)
+
+	problems, zonePriorities, err := scheduler.Dump(&cfg, scoreserverClient, vmmsClient, lg)
+	if err != nil {
+		return err
+	}
+
+	j := struct {
+		Problems       map[string]*scheduler.Problem `json:"problems"`
+		ZonePriorities []*scheduler.ZonePriority     `json:"zone_priorities"`
+	}{
+		Problems:       problems,
+		ZonePriorities: zonePriorities,
+	}
+
+	b, err := json.MarshalIndent(&j, "", "  ")
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+	os.Stdout.Write(b)
 
 	return nil
 }
