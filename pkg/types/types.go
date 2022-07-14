@@ -128,7 +128,7 @@ type SchedulerConfig struct {
 		} `yaml:"projects"`
 		Problems []struct {
 			MachineImageName string `yaml:"machine_image_name"`
-			KeepPool         int    `yaml:"keep_pool"`
+			PoolCount        int    `yaml:"pool_count"`
 			ProblemID        string `yaml:"problem_id"`
 		} `yaml:"problems"`
 	} `yaml:"setting"`

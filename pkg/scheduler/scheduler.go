@@ -21,7 +21,7 @@ type Problem struct {
 	UnderChallenge   int
 	UnderScoring     int
 	Abandoned        int
-	KeepPool         int
+	PoolCount        int
 	KeptInstances    []Instance
 	CurrentInstance  int
 }
@@ -118,7 +118,7 @@ func InitScheduler(cfg *types.SchedulerConfig, lg *zap.Logger) (map[string]*Prob
 			UnderChallenge:   0,
 			UnderScoring:     0,
 			Abandoned:        0,
-			KeepPool:         p.KeepPool,
+			PoolCount:        p.PoolCount,
 			KeptInstances:    []Instance{},
 			CurrentInstance:  0,
 		}
@@ -256,7 +256,7 @@ func PISLogging(pis map[string]*Problem, lg *zap.Logger) {
 		lg.Info("--------Problem Environments--------")
 		lg.Info("Problem Name: " + pn)
 		lg.Info("Problem ID: " + pi.ProblemID)
-		lg.Info("KeepPool: " + strconv.Itoa(pi.KeepPool))
+		lg.Info("PoolCount: " + strconv.Itoa(pi.PoolCount))
 		lg.Info("Ready: " + strconv.Itoa(pi.Ready))
 		lg.Info("NotReady: " + strconv.Itoa(pi.NotReady))
 		lg.Info("UnderChallenge: " + strconv.Itoa(pi.UnderChallenge))
@@ -320,8 +320,8 @@ func SchedulingList(problems map[string]*Problem, lg *zap.Logger) ([]CreationTar
 		// Ready と NotReady なインスタンスを保持したいインスタンスとしてカウントする
 		validInstanceCount := problem.Ready + problem.NotReady
 
-		// Ready + NotReady なインスタンスが KeepPool を超えていたらインスタンスの削除を行う
-		for i := 0; validInstanceCount > problem.KeepPool && len(filteredKeepInstances) > i; i++ {
+		// Ready + NotReady なインスタンスが PoolCount を超えていたらインスタンスの削除を行う
+		for i := 0; validInstanceCount > problem.PoolCount && len(filteredKeepInstances) > i; i++ {
 			deletionTargetInstances = append(deletionTargetInstances, DeletionTargetInstance{
 				ProblemName:  key,
 				InstanceName: filteredKeepInstances[i].InstanceName,
@@ -331,8 +331,8 @@ func SchedulingList(problems map[string]*Problem, lg *zap.Logger) ([]CreationTar
 			validInstanceCount--
 		}
 
-		// Ready + NotReady なインスタンスが KeepPool より少ない場合は作成対象にする
-		for validInstanceCount < problem.KeepPool {
+		// Ready + NotReady なインスタンスが PoolCount より少ない場合は作成対象にする
+		for validInstanceCount < problem.PoolCount {
 			creationTargetInstances = append(creationTargetInstances, CreationTargetInstance{
 				ProblemName:      key,
 				ProblemID:        problem.ProblemID,
