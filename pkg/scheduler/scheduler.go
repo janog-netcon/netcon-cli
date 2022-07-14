@@ -256,6 +256,7 @@ func PISLogging(pis map[string]*Problem, lg *zap.Logger) {
 		lg.Info("--------Problem Environments--------")
 		lg.Info("Problem Name: " + pn)
 		lg.Info("Problem ID: " + pi.ProblemID)
+		lg.Info("KeepPool: " + strconv.Itoa(pi.KeepPool))
 		lg.Info("Ready: " + strconv.Itoa(pi.Ready))
 		lg.Info("NotReady: " + strconv.Itoa(pi.NotReady))
 		lg.Info("UnderChallenge: " + strconv.Itoa(pi.UnderChallenge))
