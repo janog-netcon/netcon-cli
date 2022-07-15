@@ -1,9 +1,11 @@
-FROM alpine:3.13.0
+FROM golang:1.18-alpine
 
 LABEL MAINTAINER 'janog-netcon'
 
-RUN apk add --no-cache ca-certificates && update-ca-certificates
-# build by goreleaser
-ADD netcon /
+WORKDIR /app
 
-ENTRYPOINT ["/netcon"]
+COPY . /app
+
+RUN go build ./cmd/netcon/netcon.go
+
+ENTRYPOINT ["/app/netcon"]

@@ -69,7 +69,7 @@ const (
 	ProblemEnvironmentInnerStatusUnderChallenge = "UNDER_CHALLENGE"
 	// ProblemEnvironmentInnerStatusUnderScoring 採点中
 	ProblemEnvironmentInnerStatusUnderScoring = "UNDER_SCORING"
-	// ProblemEnvironmentInnerStatusAbandoned 削除中
+	// ProblemEnvironmentInnerStatusAbandoned 破棄した(問題を解き終わって不要になった)
 	ProblemEnvironmentInnerStatusAbandoned = "ABANDONED"
 )
 
@@ -113,7 +113,11 @@ type SchedulerConfig struct {
 			Endpoint   string `yaml:"endpoint"`
 			Credential string `yaml:"credential"`
 		} `yaml:"vmms"`
-		Cron     string `yaml:"cron"`
+		Cron      string `yaml:"cron"`
+		Scheduler struct {
+			InstanceCreationInterval int `yaml:"instance_creation_interval"`
+			InstanceDeletionInterval int `yaml:"instance_deletion_interval"`
+		} `yaml:"scheduler"`
 		Projects []struct {
 			Name  string `yaml:"name"`
 			Zones []struct {
@@ -123,52 +127,9 @@ type SchedulerConfig struct {
 			} `yaml:"zones"`
 		} `yaml:"projects"`
 		Problems []struct {
-			Name            string `yaml:"name"`
-			KeepPool        int    `yaml:"keep_pool"`
-			DefaultInstance int    `yaml:"default_instance"`
+			MachineImageName string `yaml:"machine_image_name"`
+			PoolCount        int    `yaml:"pool_count"`
+			ProblemID        string `yaml:"problem_id"`
 		} `yaml:"problems"`
 	} `yaml:"setting"`
-}
-
-//問題ごとの情報
-type ProblemInstance struct {
-	MachineImageName string
-	ProblemID        string
-	NotReady         int
-	Ready            int
-	UnderChallenge   int
-	UnderScoring     int
-	Abandoned        int
-	KeepPool         int
-	KIS              []KeepInstance
-	CurrentInstance  int
-	DefaultInstance  int
-}
-
-type KeepInstance struct {
-	InstanceName string
-	ProjectName  string
-	ZoneName     string
-	CreatedAt    time.Time
-}
-
-type ZonePriority struct {
-	ProjectName     string
-	ZoneName        string
-	Priority        int
-	MaxInstance     int
-	CurrentInstance int
-}
-
-type CreateInstance struct {
-	ProblemName      string
-	ProblemID        string
-	MachineImageName string
-}
-
-type DeleteInstance struct {
-	ProblemName  string
-	InstanceName string
-	ProjectName  string
-	ZoneName     string
 }

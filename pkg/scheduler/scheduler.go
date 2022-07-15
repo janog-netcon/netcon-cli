@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
-	"strings"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -13,37 +13,85 @@ import (
 	"github.com/janog-netcon/netcon-cli/pkg/vmms"
 )
 
+type Problem struct {
+	MachineImageName string
+	ProblemID        string
+	NotReady         int
+	Ready            int
+	UnderChallenge   int
+	UnderScoring     int
+	Abandoned        int
+	PoolCount        int
+	KeptInstances    []Instance
+	CurrentInstance  int
+}
+
+type Instance struct {
+	InstanceName string
+	ProjectName  string
+	ZoneName     string
+	InnerStatus  *string
+	CreatedAt    time.Time
+}
+
+type ZonePriority struct {
+	ProjectName     string
+	ZoneName        string
+	Priority        int
+	MaxInstance     int
+	CurrentInstance int
+}
+
+type CreationTargetInstance struct {
+	ProblemName      string
+	ProblemID        string
+	MachineImageName string
+}
+
+type DeletionTargetInstance struct {
+	ProblemName  string
+	InstanceName string
+	ProjectName  string
+	ZoneName     string
+}
+
 func SchedulerReady(cfg *types.SchedulerConfig, ssClient *scoreserver.Client, vmmsClient *vmms.Client, lg *zap.Logger) error {
 	lg.Info("Scheduler: SchedulerReady")
-	//SchedulerConfigをSchedulerInfoにまとめ,ZonePriotyを作る
-	pis, zps := InitSchedulerInfo(cfg, lg)
-	//ScoreServerのデータを取得し集計する
-	pis, zps, abList, err := AggregateInstance(pis, zps, ssClient, lg)
+
+	// configファイルから設定を読み込む
+	problems, zonePriorities := InitScheduler(cfg, lg)
+
+	// ScoreServer からデータを取得し、現在のインスタンス状況を集計する
+	problems, zonePriorities, abandonedInstances, err := AggregateInstance(problems, zonePriorities, ssClient, lg)
+
 	if err != nil {
 		lg.Error("Scheduler Aggregate: " + err.Error())
 		return err
 	}
-	//Logging ProblemInstanceInfo
-	PISLogging(pis, lg)
-	ZPSLogging(zps, lg)
-	//ConfigよりInstanceの作成リストを削除リストを作る
-	ciList, diList := SchedulingList(pis, lg)
 
-	//Instance削除リストから対象Instanceを削除する
-	err = DeleteScheduler(abList, vmmsClient, lg)
+	// ロギング
+	PISLogging(problems, lg)
+	ZPSLogging(zonePriorities, lg)
+
+	// 作成対象のインスタンスと削除対象のインスタンスを列挙する
+	creationTargetInstances, deletionTargetInstances := SchedulingList(problems, lg)
+
+	// abandoned なインスタンスを削除する
+	err = DeleteInstances(abandonedInstances, vmmsClient, cfg.Setting.Scheduler.InstanceDeletionInterval, lg)
 	if err != nil {
 		lg.Error("Scheduler DeleteScheduler: AbandonedInstance. " + err.Error())
 		return err
 	}
 
-	//Instance削除リストから対象Instanceを削除する
-	err = DeleteScheduler(diList, vmmsClient, lg)
+	// 削除対象のインスタンスを削除する
+	err = DeleteInstances(deletionTargetInstances, vmmsClient, cfg.Setting.Scheduler.InstanceDeletionInterval, lg)
 	if err != nil {
 		lg.Error("Scheduler DeleteScheduler: " + err.Error())
 		return err
 	}
-	//Instance作成リストから対象ProblemのInstanceを作成する
-	err = CreateScheduler(ciList, zps, vmmsClient, lg)
+
+	// 作成対象のインスタンスを作成する
+	err = CreateInstances(creationTargetInstances, zonePriorities, vmmsClient, cfg.Setting.Scheduler.InstanceCreationInterval, lg)
 	if err != nil {
 		lg.Error("Scheduler CreateScheduler: " + err.Error())
 		return err
@@ -51,84 +99,164 @@ func SchedulerReady(cfg *types.SchedulerConfig, ssClient *scoreserver.Client, vm
 	return nil
 }
 
-func InitSchedulerInfo(cfg *types.SchedulerConfig, lg *zap.Logger) (map[string]*types.ProblemInstance, []*types.ZonePriority) {
+// InitScheduler VMとGCP Projectに関する情報を設定ファイルから取得し、Schedulerで扱える形式に変換する
+// config.Problems -> Problems
+// config.Projects -> ZonePriorities
+func InitScheduler(cfg *types.SchedulerConfig, lg *zap.Logger) (map[string]*Problem, []*ZonePriority) {
+
 	lg.Info("Scheduler: InitSchedulerInfo")
-	pis := map[string]*types.ProblemInstance{}
-	//Init pis
+
+	// config から問題情報を取得する
+	problems := map[string]*Problem{}
+
 	for _, p := range cfg.Setting.Problems {
-		pis[p.Name] = &types.ProblemInstance{MachineImageName: "", ProblemID: "", NotReady: 0, Ready: 0, UnderChallenge: 0, UnderScoring: 0, Abandoned: 0, KeepPool: p.KeepPool, KIS: []types.KeepInstance{}, CurrentInstance: 0, DefaultInstance: p.DefaultInstance}
-	}
-	var zps []*types.ZonePriority
-	//Init zps
-	for _, p := range cfg.Setting.Projects {
-		for _, z := range p.Zones {
-			zps = append(zps, &types.ZonePriority{ProjectName: p.Name, ZoneName: z.Name, Priority: z.Priority, MaxInstance: z.MaxInstance, CurrentInstance: 0})
+		problems[p.MachineImageName] = &Problem{
+			MachineImageName: p.MachineImageName,
+			ProblemID:        p.ProblemID,
+			NotReady:         0,
+			Ready:            0,
+			UnderChallenge:   0,
+			UnderScoring:     0,
+			Abandoned:        0,
+			PoolCount:        p.PoolCount,
+			KeptInstances:    []Instance{},
+			CurrentInstance:  0,
 		}
 	}
-	return pis, zps
+
+	// config からzone情報を取得する
+	zonePriorities := []*ZonePriority{}
+
+	for _, p := range cfg.Setting.Projects {
+		for _, z := range p.Zones {
+			zonePriorities = append(zonePriorities, &ZonePriority{
+				ProjectName:     p.Name,
+				ZoneName:        z.Name,
+				Priority:        z.Priority,
+				MaxInstance:     z.MaxInstance,
+				CurrentInstance: 0,
+			})
+		}
+	}
+	return problems, zonePriorities
 }
 
-func AggregateInstance(pis map[string]*types.ProblemInstance, zps []*types.ZonePriority, ssClient *scoreserver.Client, lg *zap.Logger) (map[string]*types.ProblemInstance, []*types.ZonePriority, []types.DeleteInstance, error) {
+// AggregateInstance スコアサーバから問題環境情報を取得し、現在のインスタンス情報について集計を行う
+func AggregateInstance(problems map[string]*Problem, zonePriorities []*ZonePriority, ssClient *scoreserver.Client, lg *zap.Logger) (map[string]*Problem, []*ZonePriority, []DeletionTargetInstance, error) {
 	lg.Info("Scheduler: AggregateInstance")
-	//ScoreServerからデータ取得
-	pes, err := ssClient.ListProblemEnvironment()
+
+	// ScoreServer から問題環境データを取得する
+	problemEnvironments, err := ssClient.ListProblemEnvironment()
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	lg.Info("Scheduler: Aggregate. Got ProblemEnviroments")
-	//ABANDOND DeleteList
-	abList := []types.DeleteInstance{}
 
-	for _, p := range *pes {
-		min := strings.Split(*p.MachineImageName, "-")
-		// image-nao-abcde #naoが問題コード
-		// ["image", "nao", "abcde"] にsplitして問題コードを取得している
-		pn := min[1]
-		if _, ok := pis[pn]; !ok {
-			lg.Error("Scheduler: Aggregate. This problem name not exists. The value is " + pn)
+	lg.Info("Scheduler: Aggregate. Got ProblemEnvironments")
+
+	// 削除するインスタンスリスト
+	abandonedInstances := []DeletionTargetInstance{}
+
+	for _, p := range *problemEnvironments {
+
+		if _, ok := problems[*p.MachineImageName]; !ok {
+			lg.Error("Scheduler: Aggregate. This problem name not exists. The value is " + *p.MachineImageName)
 			continue
 		}
-		pis[pn].MachineImageName = *p.MachineImageName
-		pis[pn].ProblemID = p.ProblemID
+
+		// エラーメッセージは出力するが処理は継続する
+		// configファイルに書かれているMachineImageNameを正とする
+		if problems[*p.MachineImageName].MachineImageName != *p.MachineImageName {
+			lg.Error(fmt.Sprintf(
+				"Scheduler: Aggregate. Inconsistent settings: Scheduler Value: %s, ScoreServer value: %s",
+				problems[*p.MachineImageName].MachineImageName,
+				*p.MachineImageName,
+			))
+		}
+
+		// エラーメッセージは出力するが処理は継続する
+		// configファイルに書かれているProblemIDを正とする
+		if problems[*p.MachineImageName].ProblemID != p.ProblemID {
+			lg.Error(fmt.Sprintf(
+				"Scheduler: Aggregate. Inconsistent settings: Scheduler Value: %s, ScoreServer value: %s",
+				problems[*p.MachineImageName].ProblemID,
+				p.ProblemID,
+			))
+		}
+
 		if p.InnerStatus == nil {
-			pis[pn].Ready++
-			pis[pn].KIS = append(pis[pn].KIS, types.KeepInstance{InstanceName: p.Name, ProjectName: p.ProjectName, ZoneName: p.ZoneName, CreatedAt: p.CreatedAt})
+			problems[*p.MachineImageName].Ready++
+			problems[*p.MachineImageName].KeptInstances = append(
+				problems[*p.MachineImageName].KeptInstances,
+				Instance{
+					InstanceName: p.Name,
+					ProjectName:  p.ProjectName,
+					ZoneName:     p.ZoneName,
+					InnerStatus:  p.InnerStatus,
+					CreatedAt:    p.CreatedAt,
+				},
+			)
 		} else {
 			switch *p.InnerStatus {
 			case types.ProblemEnvironmentInnerStatusNotReady:
-				pis[pn].NotReady++
+				problems[*p.MachineImageName].NotReady++
 			case types.ProblemEnvironmentInnerStatusReady:
-				pis[pn].Ready++
-				pis[pn].KIS = append(pis[pn].KIS, types.KeepInstance{InstanceName: p.Name, ProjectName: p.ProjectName, ZoneName: p.ZoneName, CreatedAt: p.CreatedAt})
+				problems[*p.MachineImageName].Ready++
+				problems[*p.MachineImageName].KeptInstances = append(
+					problems[*p.MachineImageName].KeptInstances,
+					Instance{
+						InstanceName: p.Name,
+						ProjectName:  p.ProjectName,
+						ZoneName:     p.ZoneName,
+						InnerStatus:  p.InnerStatus,
+						CreatedAt:    p.CreatedAt,
+					},
+				)
 			case types.ProblemEnvironmentInnerStatusUnderChallenge:
-				pis[pn].UnderChallenge++
+				problems[*p.MachineImageName].UnderChallenge++
 			case types.ProblemEnvironmentInnerStatusUnderScoring:
-				pis[pn].UnderScoring++
+				problems[*p.MachineImageName].UnderScoring++
 			case types.ProblemEnvironmentInnerStatusAbandoned:
-				pis[pn].Abandoned++
-				//ABANDONEDを消す
-				abList = append(abList, types.DeleteInstance{ProblemName: pn, InstanceName: p.Name, ProjectName: p.ProjectName, ZoneName: p.ZoneName})
+				problems[*p.MachineImageName].Abandoned++
+				// 削除するインスタンス
+				abandonedInstances = append(abandonedInstances, DeletionTargetInstance{
+					ProblemName:  *p.MachineImageName,
+					InstanceName: p.Name,
+					ProjectName:  p.ProjectName,
+					ZoneName:     p.ZoneName,
+				})
 			case "":
-				pis[pn].Ready++
-				pis[pn].KIS = append(pis[pn].KIS, types.KeepInstance{InstanceName: p.Name, ProjectName: p.ProjectName, ZoneName: p.ZoneName, CreatedAt: p.CreatedAt})
+				// スコアサーバがまだ触れていないインスタンスのInnerStatusにはnil(デフォルト)が設定されている
+				// そのため、scheduler的には InnerStatus に nil が設定されているインスタンスはReady扱いになる
+				problems[*p.MachineImageName].Ready++
+				problems[*p.MachineImageName].KeptInstances = append(problems[*p.MachineImageName].KeptInstances, Instance{
+					InstanceName: p.Name,
+					ProjectName:  p.ProjectName,
+					ZoneName:     p.ZoneName,
+					InnerStatus:  p.InnerStatus,
+					CreatedAt:    p.CreatedAt,
+				})
 			}
 		}
-		pis[pn].CurrentInstance = pis[pn].CurrentInstance + 1
-		//ZoneごとのInstance数を集計する
-		for _, zp := range zps {
+
+		problems[*p.MachineImageName].CurrentInstance++
+
+		// ZoneごとのInstance数を集計する
+		for _, zp := range zonePriorities {
 			if zp.ProjectName == p.ProjectName && zp.ZoneName == p.ZoneName {
-				zp.CurrentInstance = zp.CurrentInstance + 1
+				zp.CurrentInstance++
 			}
 		}
 	}
-	return pis, zps, abList, nil
+
+	return problems, zonePriorities, abandonedInstances, nil
 }
 
-func PISLogging(pis map[string]*types.ProblemInstance, lg *zap.Logger) {
+func PISLogging(pis map[string]*Problem, lg *zap.Logger) {
 	for pn, pi := range pis {
 		lg.Info("--------Problem Environments--------")
 		lg.Info("Problem Name: " + pn)
 		lg.Info("Problem ID: " + pi.ProblemID)
+		lg.Info("PoolCount: " + strconv.Itoa(pi.PoolCount))
 		lg.Info("Ready: " + strconv.Itoa(pi.Ready))
 		lg.Info("NotReady: " + strconv.Itoa(pi.NotReady))
 		lg.Info("UnderChallenge: " + strconv.Itoa(pi.UnderChallenge))
@@ -138,7 +266,7 @@ func PISLogging(pis map[string]*types.ProblemInstance, lg *zap.Logger) {
 	}
 }
 
-func ZPSLogging(zps []*types.ZonePriority, lg *zap.Logger) {
+func ZPSLogging(zps []*ZonePriority, lg *zap.Logger) {
 	for _, zp := range zps {
 		lg.Info("--------Zone Priority Info--------")
 		lg.Info("Project Name: " + zp.ProjectName)
@@ -149,95 +277,150 @@ func ZPSLogging(zps []*types.ZonePriority, lg *zap.Logger) {
 	}
 }
 
-type KIS []types.KeepInstance
+type KeptInstances []Instance
 
-func (a KIS) Len() int           { return len(a) }
-func (a KIS) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a KIS) Less(i, j int) bool { return a[j].CreatedAt.Before(a[i].CreatedAt) }
+func (a KeptInstances) Len() int           { return len(a) }
+func (a KeptInstances) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a KeptInstances) Less(i, j int) bool { return a[j].CreatedAt.Before(a[i].CreatedAt) }
 
-func SchedulingList(pis map[string]*types.ProblemInstance, lg *zap.Logger) ([]types.CreateInstance, []types.DeleteInstance) {
-	lg.Info("Scheduler: SchedulingList")
-	ciList := []types.CreateInstance{}
-	diList := []types.DeleteInstance{}
-	for pn, pi := range pis {
-		//削除するInstanceは新しく出来たものから。
-		sort.Sort(KIS(pi.KIS))
-		//問題のReady+NotReady+Abandoned数がKeepInstanceを超えてはいけない。超えてたら削除対象。
-		for i := 0; pi.Ready+pi.NotReady+pi.Abandoned > pi.KeepPool; i++ {
-			//default値以下のinstance数の場合はpoolを消さない. 消すReadyがなければ終了.
-			if pi.CurrentInstance <= pi.DefaultInstance || pi.Ready <= i {
-				break
-			}
-			diList = append(diList, types.DeleteInstance{ProblemName: pn, InstanceName: pi.KIS[i].InstanceName, ProjectName: pi.KIS[i].ProjectName, ZoneName: pi.KIS[i].ZoneName})
-			pi.Ready--
-			pi.CurrentInstance--
-		}
-		//問題のReady+NotReady+Abandoned数がKeepPoolより少ない場合は作成対象にする
-		for i := 0; pi.Ready+pi.NotReady+pi.Abandoned < pi.KeepPool; i++ {
-			ciList = append(ciList, types.CreateInstance{ProblemName: pn, ProblemID: pi.ProblemID, MachineImageName: pi.MachineImageName})
-			pi.NotReady++
+// statusが Ready, NotReady, nil なインスタンスでfilterして返す
+func filterInstances(instances []Instance) []Instance {
+	filteredInstances := []Instance{}
+
+	for _, instance := range instances {
+		if instance.InnerStatus == nil ||
+			*instance.InnerStatus == types.ProblemEnvironmentInnerStatusReady ||
+			*instance.InnerStatus == types.ProblemEnvironmentInnerStatusNotReady {
+			filteredInstances = append(filteredInstances, instance)
 		}
 	}
-	return ciList, diList
+
+	return filteredInstances
 }
 
-//削除対象Instanceを全て削除する
-//各問題のdefaultのInstance数以下の場合は削除しない
-func DeleteScheduler(dis []types.DeleteInstance, vmmsClient *vmms.Client, lg *zap.Logger) error {
-	lg.Info("Scheduler: DeleteScheduler")
-	var err error
-	for i, d := range dis {
-		err = vmmsClient.DeleteInstance(d.InstanceName, d.ProjectName, d.ZoneName)
-		if err != nil {
-			msg := ""
-			for _, v := range dis[i:] {
-				msg = msg + v.ProblemName + ": " + v.InstanceName + ", "
-			}
-			return fmt.Errorf("scheduler: delete scheduler. %w remains on the create_instance_list. %s", err, msg)
+// SchedulingList 作成・削除するインスタンスを列挙する
+// 削除するインスタンスは、作成日時が新しいインスタンスから削除する。
+// (インスタンスを作成してからインスタンス内部でプロビジョニングを行っているため、削除する順番は新しいインスタンスからにしている)
+//
+// 処理について
+// 「Ready, NotReady」なインスタンスが KeepInstance を超えていたらインスタンスを削除する
+// ただし、このReadyは InnerStatus が nil なインスタンス(まだスコアサーバから使用されていないインスタンス) も含んでいる
+func SchedulingList(problems map[string]*Problem, lg *zap.Logger) ([]CreationTargetInstance, []DeletionTargetInstance) {
+	lg.Info("Scheduler: SchedulingList")
+
+	creationTargetInstances := []CreationTargetInstance{}
+	deletionTargetInstances := []DeletionTargetInstance{}
+
+	for key, problem := range problems {
+		// 新しく作成されたインスタンスから削除対象にするために作成日時でソートする
+		sort.Sort(KeptInstances(problem.KeptInstances))
+		// 問題に挑戦中のVMが削除されないようにReadyとNotReadyでfilterする
+		filteredKeepInstances := filterInstances(problem.KeptInstances)
+
+		// Ready と NotReady なインスタンスを保持したいインスタンスとしてカウントする
+		validInstanceCount := problem.Ready + problem.NotReady
+
+		// Ready + NotReady なインスタンスが PoolCount を超えていたらインスタンスの削除を行う
+		for i := 0; validInstanceCount > problem.PoolCount && len(filteredKeepInstances) > i; i++ {
+			deletionTargetInstances = append(deletionTargetInstances, DeletionTargetInstance{
+				ProblemName:  key,
+				InstanceName: filteredKeepInstances[i].InstanceName,
+				ProjectName:  filteredKeepInstances[i].ProjectName,
+				ZoneName:     filteredKeepInstances[i].ZoneName,
+			})
+			validInstanceCount--
 		}
-		lg.Info("DeletedInstance: " + d.ProblemName + " " + d.InstanceName)
+
+		// Ready + NotReady なインスタンスが PoolCount より少ない場合は作成対象にする
+		for validInstanceCount < problem.PoolCount {
+			creationTargetInstances = append(creationTargetInstances, CreationTargetInstance{
+				ProblemName:      key,
+				ProblemID:        problem.ProblemID,
+				MachineImageName: problem.MachineImageName,
+			})
+			validInstanceCount++
+		}
 	}
+
+	return creationTargetInstances, deletionTargetInstances
+}
+
+// DeleteInstances 削除対象のinstanceを全て削除する
+func DeleteInstances(instances []DeletionTargetInstance, vmmsClient *vmms.Client, interval int, lg *zap.Logger) error {
+	lg.Info("Scheduler: DeleteScheduler")
+
+	for i, instance := range instances {
+
+		// 1秒待たないとEOFエラーになる `Post "http://vm-management-service:81/instance": EOF`
+		time.Sleep(time.Duration(interval) * time.Second)
+
+		if err := vmmsClient.DeleteInstance(instance.InstanceName, instance.ProjectName, instance.ZoneName); err != nil {
+			msg := ""
+			for _, v := range instances[i:] {
+				msg = msg + v.InstanceName + ", "
+			}
+			// FIXME: VM不整合が起きた時に404エラーになって処理が止まってしまうのでログを出力するだけにしている
+			// return fmt.Errorf("scheduler: delete scheduler. %w remains on the delete_instance_list. %s", err, msg)
+			lg.Error(fmt.Sprintf("scheduler: delete scheduler. %s remains on the delete_instance_list. %s", err.Error(), msg))
+		}
+		lg.Info("DeletedInstance: " + instance.ProblemName + " " + instance.InstanceName)
+	}
+
 	return nil
 }
 
-type ZPS []*types.ZonePriority
+type ZonePriorities []*ZonePriority
 
-func (a ZPS) Len() int           { return len(a) }
-func (a ZPS) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ZPS) Less(i, j int) bool { return a[i].Priority < a[j].Priority }
+func (a ZonePriorities) Len() int           { return len(a) }
+func (a ZonePriorities) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ZonePriorities) Less(i, j int) bool { return a[i].Priority < a[j].Priority }
 
-//空いてるZoneの中で優先Zoneに作成対象Instanceを作成する
-func CreateScheduler(cis []types.CreateInstance, zps []*types.ZonePriority, vmmsClient *vmms.Client, lg *zap.Logger) error {
+// CreateInstance 作成対象のinstanceを作成する
+// 作成時はZonePriorityを参照し、Zoneの優先順に作成していく
+func CreateInstances(instances []CreationTargetInstance, zonePriorities []*ZonePriority, vmmsClient *vmms.Client, interval int, lg *zap.Logger) error {
 	lg.Info("Scheduler: CreateScheduler")
-	//優先Zone順に作っていく
-	sort.Sort(ZPS(zps))
+
+	// Zoneを優先順に並び替える
+	sort.Sort(ZonePriorities(zonePriorities))
+
+	// インスタンスを作成した回数 (作成したインスタンス数)
 	i := 0
-	var err error
-	err = nil
-	//優先度の高いZoneから作る
-	for _, zp := range zps {
-		//Zoneに空きがある限りはそこで作る
-		for zp.MaxInstance-zp.CurrentInstance > 0 && len(cis) > i {
-			ci, err := vmmsClient.CreateInstance(cis[i].ProblemID, cis[i].MachineImageName, zp.ProjectName, zp.ZoneName)
+
+	// 優先度の高いZoneからinstanceを作成する
+	for _, zonePriority := range zonePriorities {
+
+		// Zoneに空きがある限りは対象のZoneにインスタンスを作成する
+		creatableInstanceCount := zonePriority.MaxInstance - zonePriority.CurrentInstance
+
+		for creatableInstanceCount > 0 && len(instances) > i {
+
+			// 1秒待たないとEOFエラーになる `Post "http://vm-management-service:81/instance": EOF`
+			time.Sleep(time.Duration(interval) * time.Second)
+
+			newInstance, err := vmmsClient.CreateInstance(
+				instances[i].ProblemID,
+				instances[i].MachineImageName,
+				zonePriority.ProjectName,
+				zonePriority.ZoneName,
+			)
+
 			if err != nil {
-				lg.Error("CreatedInstance: Cannot CreateInstance. " + err.Error())
-				break
+				lg.Error("CreatedInstance: Failed to CreateInstance. " + err.Error())
+
+				msg := ""
+				for _, v := range instances[i:] {
+					msg = msg + v.ProblemName + ", "
+				}
+
+				return fmt.Errorf("scheduler: create scheduler. remains on the create_instance_list. %s", msg)
 			}
-			lg.Info("CreatedInstance: " + cis[i].ProblemName + " " + ci.InstanceName)
+
+			lg.Info("CreatedInstance: " + newInstance.InstanceName)
+
 			i++
-			zp.CurrentInstance++
-		}
-		if err != nil {
-			break
+			creatableInstanceCount--
 		}
 	}
-	//cisが残っていたらerrorとして返す
-	if len(cis) > i {
-		msg := ""
-		for _, v := range cis[i:] {
-			msg = msg + v.ProblemName + ", "
-		}
-		return fmt.Errorf("scheduler: create scheduler. remains on the create_instance_list. %s", msg)
-	}
+
 	return nil
 }
